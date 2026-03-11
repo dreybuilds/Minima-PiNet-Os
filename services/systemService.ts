@@ -1,5 +1,5 @@
 
-import { ClusterNode } from '../types';
+import { ClusterNode, HatType } from '../types';
 
 export const systemService = {
   async scanSubnet(subnet: string, onProgress: (log: string) => void, maxRetries: number = 0): Promise<ClusterNode[]> {
@@ -9,13 +9,17 @@ export const systemService = {
     onProgress(`[ARP] Broadcasting on interface eth0 (${subnet}/24)`);
     await new Promise(r => setTimeout(r, 600));
 
+    // Randomly pick a Hat for the local node to simulate different hardware configurations
+    const hats: HatType[] = ['SSD_NVME', 'AI_NPU', 'NONE'];
+    const randomHat = hats[Math.floor(Math.random() * hats.length)];
+
     // Always find the local node (Gateway/Self)
     const localNode = { 
         ip: '10', 
         node: { 
             id: 'n1', 
             name: 'Pi-Alpha (Local)', 
-            hat: 'SSD_NVME', 
+            hat: randomHat, 
             metrics: { cpu: 12, ram: 2.1, temp: 45, iops: 12500 },
             status: 'online'
         }, 

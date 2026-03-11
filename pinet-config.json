@@ -1,0 +1,33 @@
+{
+  "network": {
+    "interface": "eth0",
+    "subnet": "192.168.1.0",
+    "netmask": "255.255.255.0",
+    "gateway": "192.168.1.1",
+    "dns": ["8.8.8.8", "1.1.1.1"]
+  },
+  "dhcp": {
+    "range_start": "192.168.1.100",
+    "range_end": "192.168.1.200",
+    "lease_time": "12h"
+  },
+  "pxe": {
+    "tftp_root": "/var/lib/tftpboot",
+    "nfs_root": "/export/pis",
+    "default_image": "pinetos-v1.0.35-aarch64"
+  },
+  "nodes": [
+    {
+      "mac_address": "b8:27:eb:xx:xx:xx",
+      "ip_address": "192.168.1.10",
+      "hostname": "pinet-alpha",
+      "role": "master"
+    },
+    {
+      "mac_address": "b8:27:eb:yy:yy:yy",
+      "ip_address": "192.168.1.11",
+      "hostname": "pinet-beta",
+      "role": "worker"
+    }
+  ]
+}

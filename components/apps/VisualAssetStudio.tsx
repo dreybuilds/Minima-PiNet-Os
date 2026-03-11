@@ -15,8 +15,8 @@ const VisualAssetStudio: React.FC = () => {
     if (!prompt.trim() || isGenerating) return;
     
     // Check key
-    if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
-      await window.aistudio.openSelectKey();
+    if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
+      await (window as any).aistudio.openSelectKey();
     }
 
     setIsGenerating(true);

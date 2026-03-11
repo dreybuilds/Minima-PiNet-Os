@@ -30,6 +30,21 @@ class ShellService {
           modified: Date.now(),
           permissions: 'drwxr-xr-x',
           children: [
+            {
+              name: 'pinet',
+              type: 'dir',
+              modified: Date.now(),
+              permissions: 'drwxr-xr-x',
+              children: [
+                {
+                  name: 'config.json',
+                  type: 'file',
+                  content: '{\n  "network": {\n    "interface": "eth0",\n    "subnet": "192.168.1.0",\n    "netmask": "255.255.255.0",\n    "gateway": "192.168.1.1",\n    "dns": ["8.8.8.8", "1.1.1.1"]\n  },\n  "dhcp": {\n    "range_start": "192.168.1.100",\n    "range_end": "192.168.1.200",\n    "lease_time": "12h"\n  },\n  "pxe": {\n    "tftp_root": "/var/lib/tftpboot",\n    "nfs_root": "/export/pis",\n    "default_image": "pinetos-v1.0.35-aarch64"\n  },\n  "nodes": [\n    {\n      "mac_address": "b8:27:eb:xx:xx:xx",\n      "ip_address": "192.168.1.10",\n      "hostname": "pinet-alpha",\n      "role": "master"\n    },\n    {\n      "mac_address": "b8:27:eb:yy:yy:yy",\n      "ip_address": "192.168.1.11",\n      "hostname": "pinet-beta",\n      "role": "worker"\n    }\n  ]\n}',
+                  modified: Date.now(),
+                  permissions: '-rw-r--r--'
+                }
+              ]
+            },
             { name: 'cluster.json', type: 'file', content: '{"nodes": ["n1", "n2", "n3"], "master": "n1"}', modified: Date.now(), permissions: '-rw-r--r--' },
             { 
               name: 'os-release', 
@@ -476,6 +491,30 @@ class ShellService {
         );
         break;
       
+      case 'pinet':
+        if (args[0] === 'open' && args[1]) {
+          output.push({ text: `Opening application: ${args[1]}...`, type: 'success' });
+          // Return a special flag that the UI can catch to open the app
+          return { output, openApp: args[1] };
+        } else if (args[0] === 'install') {
+          output.push(
+            { text: 'Installing PiNet OS components...', type: 'info' },
+            { text: 'Unpacking minima-node...', type: 'info' },
+            { text: 'Setting up cluster-manager...', type: 'info' },
+            { text: 'Installation complete. You can now use `pinet open <app_id>` to launch applications.', type: 'success' },
+            { text: 'Available apps: minima-node, system-monitor, terminal, ai-assistant, wallet, maxima-messenger, cluster-manager, depai-executor, imager-utility, file-explorer, settings, visual-studio', type: 'info' }
+          );
+        } else {
+          output.push(
+            { text: 'PiNet OS Control CLI', type: 'header' },
+            { text: 'Usage: pinet [command]', type: 'info' },
+            { text: 'Commands:', type: 'info' },
+            { text: '  install       Install PiNet OS components', type: 'info' },
+            { text: '  open <app>    Open a specific application window', type: 'info' }
+          );
+        }
+        break;
+
       case 'reboot':
           output.push({ text: 'Rebooting system...', type: 'warning' });
           break;

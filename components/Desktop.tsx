@@ -1,12 +1,16 @@
 
 import React from 'react';
-import { AppId } from '../types';
+import { AppId, SystemStats, NodeStats } from '../types';
+import BentoDashboard from './BentoDashboard';
 
 interface DesktopProps {
   openApp: (id: AppId) => void;
+  systemStats: SystemStats;
+  nodeStats: NodeStats;
+  osMode: 'pinet' | 'raspbian';
 }
 
-const Desktop: React.FC<DesktopProps> = ({ openApp }) => {
+const Desktop: React.FC<DesktopProps> = ({ openApp, systemStats, nodeStats, osMode }) => {
   const apps: { id: AppId; name: string; icon: React.ReactNode; color: string }[] = [
     { 
         id: 'minima-node', 
@@ -65,8 +69,15 @@ const Desktop: React.FC<DesktopProps> = ({ openApp }) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 w-fit h-fit z-10 relative">
-      {apps.map(app => (
+    <div className="w-full h-full relative flex items-center justify-center">
+      {osMode === 'pinet' && (
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <BentoDashboard systemStats={systemStats} nodeStats={nodeStats} />
+        </div>
+      )}
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 w-fit h-fit z-10 relative">
+        {apps.map(app => (
         <button 
           key={app.id} 
           onDoubleClick={() => openApp(app.id)}
@@ -81,6 +92,7 @@ const Desktop: React.FC<DesktopProps> = ({ openApp }) => {
           <span className="text-sm font-semibold text-slate-300 drop-shadow-lg group-hover:text-white transition-colors">{app.name}</span>
         </button>
       ))}
+      </div>
     </div>
   );
 };

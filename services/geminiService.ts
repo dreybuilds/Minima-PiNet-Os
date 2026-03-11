@@ -1,9 +1,12 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-// Use process.env.API_KEY directly as per guidelines. 
-// A new instance should be created right before making an API call.
-export const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Use process.env.API_KEY for user-selected keys (Veo/Imagen) 
+// and process.env.GEMINI_API_KEY for the default gateway.
+export const getAiClient = () => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  return new GoogleGenAI({ apiKey: apiKey as string });
+};
 
 /**
  * Local Inference Support (AirLLM / Ollama / LocalAI compatible)
@@ -125,7 +128,7 @@ export const generateClusterAssets = async (prompt: string) => {
       }
     });
 
-    if (response.candidates && response.candidates[0].content.parts) {
+    if (response.candidates?.[0]?.content?.parts) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;

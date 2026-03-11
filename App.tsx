@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
 import TopBar from './components/TopBar';
-import SetupWizard from './components/apps/SetupWizard';
+import BootSplashScreen from './components/apps/BootSplashScreen';
 import { AppId, WindowState, NodeStats, SystemStats, ClusterNode } from './types';
 import MinimaNodeApp from './components/apps/MinimaNodeApp';
 import SystemMonitorApp from './components/apps/SystemMonitorApp';
@@ -80,24 +81,12 @@ const App: React.FC = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Raspbian Terminal Interactive State
-  const [raspTermOpen, setRaspTermOpen] = useState(true);
-  const [raspTermInput, setRaspTermInput] = useState('');
-  const [raspTermHistory, setRaspTermHistory] = useState<string[]>([
-    "Linux raspberrypi 6.5.0-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64 GNU/Linux",
-    "The programs included with the Debian GNU/Linux system are free software;",
-    "the exact distribution terms for each program are described in the",
-    "individual files in /usr/share/doc/*/copyright.",
-    "",
-    "Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent",
-    "permitted by applicable law.",
-    "",
-    "Type 'help' for a list of commands."
-  ]);
+  const [raspTermOpen, setRaspTermOpen] = useState(false);
   const raspTermEndRef = useRef<HTMLDivElement>(null);
   const raspTermInputRef = useRef<HTMLInputElement>(null);
 
   const [windows, setWindows] = useState<WindowState[]>([
-    { id: 'minima-node', title: 'Minima Node', isOpen: true, isMinimized: false, zIndex: 10 },
+    { id: 'minima-node', title: 'Minima Node', isOpen: false, isMinimized: false, zIndex: 10 },
     { id: 'system-monitor', title: 'System Monitor', isOpen: false, isMinimized: false, zIndex: 1 },
     { id: 'terminal', title: 'PiNet Shell', isOpen: false, isMinimized: false, zIndex: 1 },
     { id: 'ai-assistant', title: 'PiNet AI Assistant', isOpen: false, isMinimized: false, zIndex: 1 },
@@ -144,12 +133,19 @@ const App: React.FC = () => {
     if (raspTermOpen) {
         raspTermEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [raspTermHistory, raspTermOpen]);
+  }, [raspTermOpen]);
 
-  // Handle completion of setup wizard with detected nodes
-  const handleSetupComplete = (nodes: ClusterNode[]) => {
+  // Handle completion of boot sequence with detected nodes and compatible apps
+  const handleSetupComplete = (nodes: ClusterNode[], autoOpenApps: AppId[]) => {
       clusterService.setNodes(nodes);
       setIsSetupComplete(true);
+      
+      // Auto-open apps based on hardware compatibility
+      setTimeout(() => {
+        autoOpenApps.forEach(appId => {
+          openApp(appId);
+        });
+      }, 500);
   };
 
   useEffect(() => {
@@ -200,7 +196,7 @@ const App: React.FC = () => {
   const toggleOS = async () => {
     // 1. Initiate Shutdown Sequence
     setTransitionState('shutting-down');
-    await new Promise(r => setTimeout(r, 1500)); // Simulated screen off delay
+    await new Promise(r => setTimeout(r, 1000));
 
     // 2. Start Boot Sequence (Hypervisor Logic)
     setTransitionState('booting');
@@ -213,18 +209,28 @@ const App: React.FC = () => {
     const target = currentOS === 'pinet' ? 'raspbian' : 'pinet';
     
     // Animate loglines
-    setTimeout(() => setBootLog(prev => [...prev, "VMM: CPU State Saved. (128ms)"]), 800);
-    setTimeout(() => setBootLog(prev => [...prev, `HYPERVISOR: Loading Kernel Image: ${target}_kernel.img`]), 1600);
-    setTimeout(() => setBootLog(prev => [...prev, "BOOT: Verifying SHA256 Checksum... OK"]), 2400);
-    setTimeout(() => setBootLog(prev => [...prev, `INIT: Starting ${target === 'raspbian' ? 'Debian 13 (Trixie) Pixel Desktop' : 'PiNet Web3 Compositor'}...`]), 3200);
+    const logs = [
+        "VMM: CPU State Saved. (128ms)",
+        `HYPERVISOR: Loading Kernel Image: ${target}_kernel.img`,
+        "BOOT: Verifying SHA256 Checksum... OK",
+        `INIT: Starting ${target === 'raspbian' ? 'Debian 13 (Trixie) Pixel Desktop' : 'PiNet Web3 Compositor'}...`,
+        "SYSTEMD: Mounting /dev/nvme0n1p2 to /",
+        "SYSTEMD: Starting Network Manager...",
+        "SYSTEMD: Starting Graphical Interface..."
+    ];
+
+    for (const log of logs) {
+        await new Promise(r => setTimeout(r, 400));
+        setBootLog(prev => [...prev, log]);
+    }
 
     await systemService.executeHypervisorSwitch(target);
     
     // 3. Complete Switch
-    setCurrentOS(prev => prev === 'pinet' ? 'raspbian' : 'pinet');
+    setCurrentOS(target);
     setTransitionState('idle');
     setBootLog([]);
-    setRaspMenuOpen(false); // Reset menu state
+    setRaspMenuOpen(false);
     if (target === 'raspbian') setRaspTermOpen(true);
   };
 
@@ -248,58 +254,8 @@ const App: React.FC = () => {
 
   const handleMouseUp = () => setIsDragging(false);
 
-  // Raspbian Terminal Logic
-  const handleRaspTermSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const cmd = raspTermInput.trim();
-      const newHistory = [...raspTermHistory, `pi@raspberrypi:~ $ ${cmd}`];
-      
-      if (cmd === 'clear') {
-          setRaspTermHistory([]);
-          setRaspTermInput('');
-          return;
-      }
-
-      let output = '';
-      switch(cmd) {
-        case 'help': 
-            output = "GNU bash, version 5.1.16(1)-release (aarch64-unknown-linux-gnu)\nShell Commands: ls, uname, cat, clear, reboot, exit, whoami, pwd"; 
-            break;
-        case 'uname':
-        case 'uname -a': 
-            output = "Linux raspberrypi 6.5.0-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64 GNU/Linux"; 
-            break;
-        case 'ls': 
-            output = "Desktop  Documents  Downloads  Music  Pictures  Public  Templates  Videos"; 
-            break;
-        case 'whoami': 
-            output = "pi"; 
-            break;
-        case 'pwd': 
-            output = "/home/pi"; 
-            break;
-        case 'cat /etc/os-release':
-            output = "PRETTY_NAME=\"Debian GNU/Linux 13 (trixie)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_CODENAME=trixie";
-            break;
-        case 'reboot': 
-            output = "Rebooting system into Hypervisor context...";
-            setTimeout(toggleOS, 1500); 
-            break;
-        case 'exit': 
-            setRaspTermOpen(false); 
-            setRaspTermInput('');
-            return;
-        default: 
-            if (cmd) output = `bash: ${cmd}: command not found`;
-      }
-
-      if (output) newHistory.push(output);
-      setRaspTermHistory(newHistory);
-      setRaspTermInput('');
-  };
-
   if (!isSetupComplete) {
-    return <SetupWizard onComplete={handleSetupComplete} />;
+    return <BootSplashScreen onComplete={handleSetupComplete} />;
   }
 
   // Hypervisor Switching State
@@ -406,6 +362,15 @@ const App: React.FC = () => {
 
             {/* Desktop Icons */}
             <div className="p-6 mt-8 grid gap-6 w-fit absolute top-0 left-0">
+                <div 
+                    onDoubleClick={() => setRaspTermOpen(true)}
+                    className="flex flex-col items-center gap-1 group cursor-pointer hover:bg-white/10 p-2 rounded"
+                >
+                    <div className="w-12 h-12 bg-slate-800 rounded p-2 shadow border border-slate-600 group-hover:bg-slate-700 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 17l6-6-6-6M12 19h8" /></svg>
+                    </div>
+                    <span className="text-xs text-white font-bold drop-shadow-md bg-slate-900/50 px-1 rounded">Terminal</span>
+                </div>
                 <div className="flex flex-col items-center gap-1 group cursor-pointer hover:bg-white/10 p-2 rounded">
                     <div className="w-12 h-12 bg-slate-200 rounded p-2 shadow border border-slate-300 group-hover:bg-slate-100">
                         <svg className="w-full h-full text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
@@ -443,23 +408,8 @@ const App: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <div className="p-2 text-green-400 flex-1 overflow-auto cursor-text" onClick={() => raspTermInputRef.current?.focus()}>
-                        {raspTermHistory.map((line, i) => (
-                            <div key={i} className="whitespace-pre-wrap leading-relaxed">{line}</div>
-                        ))}
-                        <form onSubmit={handleRaspTermSubmit} className="flex gap-0 group">
-                             <span className="text-green-400 shrink-0 font-bold select-none mr-2">pi@raspberrypi:~ $</span>
-                             <input 
-                                ref={raspTermInputRef}
-                                autoFocus
-                                className="flex-1 bg-transparent border-none outline-none text-white caret-white"
-                                value={raspTermInput}
-                                onChange={e => setRaspTermInput(e.target.value)}
-                                spellCheck={false}
-                                autoComplete="off"
-                             />
-                        </form>
-                        <div ref={raspTermEndRef} />
+                    <div className="p-0 flex-1 overflow-hidden">
+                        <TerminalApp osMode="raspbian" onOpenApp={(appId) => openApp(appId as AppId)} />
                     </div>
                 </div>
             )}
@@ -469,7 +419,45 @@ const App: React.FC = () => {
 
   // PiNet Desktop
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-950 flex flex-col font-sans select-none transition-all duration-700 animate-in fade-in zoom-in-95 duration-700"
+    <>
+      <AnimatePresence>
+        {transitionState !== 'idle' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8 font-mono"
+          >
+            <div className="max-w-2xl w-full">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-full border-2 border-pink-500 border-t-transparent animate-spin" />
+                <div>
+                  <h2 className="text-pink-500 text-xl font-bold tracking-tighter uppercase">
+                    {transitionState === 'shutting-down' ? 'System Suspend' : 'Hypervisor Boot'}
+                  </h2>
+                  <p className="text-slate-500 text-xs">PI-NET HYPERVISOR v4.2.0-LTS</p>
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                {bootLog.map((log, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-emerald-500/80 text-xs"
+                  >
+                    <span className="text-slate-600 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                    {log}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="relative w-screen h-screen overflow-hidden bg-slate-950 flex flex-col font-sans select-none transition-all duration-700 animate-in fade-in zoom-in-95 duration-700"
          style={{ 
              backgroundImage: wallpaper !== 'carbon' ? getWallpaperUrl() : 'none',
              backgroundSize: 'cover',
@@ -483,7 +471,7 @@ const App: React.FC = () => {
       <TopBar nodeStats={nodeStats} systemStats={sysStats} onSwitchOS={toggleOS} currentOS={currentOS} />
 
       <main className="flex-1 relative overflow-hidden p-6 mt-10 mb-16">
-        <Desktop openApp={openApp} />
+        <Desktop openApp={openApp} systemStats={sysStats} nodeStats={nodeStats} osMode={currentOS} />
         
         {windows.map(win => {
           if (!win.isOpen) return null;
@@ -503,7 +491,7 @@ const App: React.FC = () => {
               >
                 {win.id === 'minima-node' && <MinimaNodeApp stats={nodeStats} />}
                 {win.id === 'system-monitor' && <SystemMonitorApp stats={sysStats} />}
-                {win.id === 'terminal' && <TerminalApp />}
+                {win.id === 'terminal' && <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} />}
                 {win.id === 'ai-assistant' && (
                   <AiAssistantApp 
                     context={{ 
@@ -543,6 +531,7 @@ const App: React.FC = () => {
         }} 
       />
     </div>
+    </>
   );
 };
 

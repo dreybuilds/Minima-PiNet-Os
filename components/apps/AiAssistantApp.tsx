@@ -51,7 +51,7 @@ const AiAssistantApp: React.FC<AiAssistantAppProps> = ({ context }) => {
       return;
     }
     
-    if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
+    if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
       setMessages(prev => [...prev, { role: 'assistant', content: "Veo generation requires a paid API key for the Beta node bridge." }]);
       return;
     }
@@ -146,9 +146,9 @@ const AiAssistantApp: React.FC<AiAssistantAppProps> = ({ context }) => {
             </div>
         )}
         
-        {window.aistudio && provider === 'gemini' && (
+        {(window as any).aistudio && provider === 'gemini' && (
            <button 
-             onClick={() => window.aistudio.openSelectKey()}
+             onClick={() => (window as any).aistudio.openSelectKey()}
              className="ml-auto px-3 py-1.5 bg-pink-600/20 border border-pink-500/40 text-pink-400 rounded-md text-[9px] font-bold uppercase tracking-widest hover:bg-pink-600 hover:text-white transition-all"
            >
              Beta Bridge Key

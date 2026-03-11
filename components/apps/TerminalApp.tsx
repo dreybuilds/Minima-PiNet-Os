@@ -1,197 +1,141 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { shell } from '../../services/shellService';
+import React, { useEffect, useRef } from 'react';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import { motion } from 'motion/react';
 
-type LineType = 'header' | 'prompt' | 'info' | 'success' | 'error' | 'command' | 'code' | 'warning' | 'ascii';
-
-interface TerminalLine {
-  text: string;
-  type: LineType;
+interface TerminalAppProps {
+  osMode?: 'pinet' | 'raspbian';
+  onOpenApp?: (appId: string) => void;
 }
 
-const TerminalApp: React.FC = () => {
-  const [history, setHistory] = useState<TerminalLine[]>([
-    { text: 'Linux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 12 (bookworm) aarch64', type: 'info' },
-    { text: '', type: 'info' },
-    { text: 'The programs included with the Debian GNU/Linux system are free software;', type: 'info' },
-    { text: 'the exact distribution terms for each program are described in the', type: 'info' },
-    { text: 'individual files in /usr/share/doc/*/copyright.', type: 'info' },
-    { text: '', type: 'info' },
-    { text: 'Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent', type: 'info' },
-    { text: 'permitted by applicable law.', type: 'info' },
-    { text: `Last login: ${new Date().toString().split(' (')[0]}`, type: 'info' },
-    { text: '', type: 'info' },
-    { text: "Type 'help' to see a list of available commands.", type: 'success' },
-    { text: '', type: 'info' }
-  ]);
-  const [input, setInput] = useState('');
-  const [commandHistory, setCommandHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }) => {
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<Terminal | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const connect = () => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
-  // Auto-scroll to bottom on history change
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [history]);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
 
-  // Focus input on mount and click
-  useEffect(() => {
-      inputRef.current?.focus();
-  }, []);
-
-  const getPrompt = () => {
-    const user = shell.getUser();
-    const path = shell.getCurrentPath();
-    const home = `/home/${user}`;
-    
-    let displayPath = path;
-    if (path === home) {
-        displayPath = '~';
-    } else if (path.startsWith(home + '/')) {
-        displayPath = '~' + path.slice(home.length);
-    }
-    
-    return `${user}@raspberrypi:${displayPath}$`;
-  };
-
-  const handleCommand = (e: React.FormEvent) => {
-    e.preventDefault();
-    const rawInput = input.trim();
-    if (!rawInput) return;
-
-    // Add to command history
-    setCommandHistory(prev => [...prev, rawInput]);
-    setHistoryIndex(-1);
-
-    if (rawInput === 'clear') {
-        setHistory([]);
-        setInput('');
-        return;
-    }
-
-    const promptLine: TerminalLine = { 
-        text: `${getPrompt()} ${rawInput}`, 
-        type: 'prompt' 
-    };
-    
-    // Execute command via Shell Service
-    const result = shell.execute(rawInput);
-    
-    // Transform shell result types to local TerminalLine types if needed
-    const outputLines: TerminalLine[] = result.output.map(line => ({
-        text: line.text,
-        type: line.type as LineType
-    }));
-
-    setHistory(prev => [...prev, promptLine, ...outputLines]);
-    setInput('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      
-      const commands = [
-        'ls', 'cd', 'pwd', 'cat', 'mkdir', 'touch', 'whoami', 'uname', 
-        'clear', 'neofetch', 'apt', 'sudo', 'reboot', 'minima', 'cluster', 'top', 'help'
-      ];
-      
-      const currentInput = input;
-      // Only complete command if it's the start
-      if (!currentInput.includes(' ') && currentInput.length > 0) {
-          const matches = commands.filter(cmd => cmd.startsWith(currentInput));
-          
-          if (matches.length === 1) {
-              setInput(matches[0] + ' ');
-          } else if (matches.length > 1) {
-              // Calculate common prefix
-              const commonPrefix = matches.reduce((acc, str) => {
-                  let i = 0;
-                  while (i < acc.length && i < str.length && acc[i] === str[i]) i++;
-                  return acc.slice(0, i);
-              }, matches[0]);
-
-              if (commonPrefix.length > currentInput.length) {
-                  setInput(commonPrefix);
-              } else {
-                  // If we are already at common prefix, list options
-                  setHistory(prev => [
-                      ...prev,
-                      { text: `${getPrompt()} ${currentInput}`, type: 'prompt' },
-                      { text: matches.join('  '), type: 'info' }
-                  ]);
-              }
-          }
+    socket.onopen = () => {
+      if (xtermRef.current) {
+        xtermRef.current.write('\x1b[1;32mConnected to host shell.\x1b[0m\r\n');
+        socket.send(JSON.stringify({ type: 'input', data: `export OS_MODE=${osMode}\nclear\n` }));
       }
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (commandHistory.length > 0) {
-            const newIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
-            setHistoryIndex(newIndex);
-            setInput(commandHistory[newIndex]);
-        }
-    } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (historyIndex !== -1) {
-            const newIndex = historyIndex + 1;
-            if (newIndex < commandHistory.length) {
-                setHistoryIndex(newIndex);
-                setInput(commandHistory[newIndex]);
-            } else {
-                setHistoryIndex(-1);
-                setInput('');
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'output' && xtermRef.current) {
+          if (msg.data.includes('PINET_CMD:OPEN:')) {
+            const match = msg.data.match(/PINET_CMD:OPEN:([a-zA-Z0-9-]+)/);
+            if (match && match[1] && onOpenApp) {
+              onOpenApp(match[1]);
             }
+          } else {
+            xtermRef.current.write(msg.data);
+          }
         }
-    }
+      } catch (e) {
+        if (xtermRef.current) xtermRef.current.write(event.data);
+      }
+    };
+
+    socket.onclose = () => {
+      if (xtermRef.current) {
+        xtermRef.current.write('\r\n\x1b[1;31mConnection lost. Retrying...\x1b[0m\r\n');
+      }
+      reconnectTimeoutRef.current = setTimeout(connect, 3000);
+    };
   };
 
-  const getLineStyles = (type: LineType) => {
-    switch (type) {
-      case 'header': return 'text-white font-bold tracking-tight border-l-2 border-white/20 pl-2 my-1';
-      case 'prompt': return 'text-emerald-400 font-bold';
-      case 'info': return 'text-slate-300';
-      case 'success': return 'text-emerald-400';
-      case 'error': return 'text-rose-400 font-medium';
-      case 'warning': return 'text-amber-400 italic';
-      case 'code': return 'text-indigo-300 bg-white/5 px-1 rounded font-mono';
-      case 'ascii': return 'text-emerald-400 font-bold leading-none tracking-tighter';
-      default: return 'text-slate-300';
-    }
-  };
+  useEffect(() => {
+    if (!terminalRef.current) return;
+
+    // Initialize xterm.js
+    const term = new Terminal({
+      cursorBlink: true,
+      cursorStyle: 'block',
+      fontSize: 14,
+      fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+      lineHeight: 1.2,
+      theme: {
+        background: 'transparent',
+        foreground: '#e2e8f0',
+        cursor: '#f43f5e', // Rose 500
+        cursorAccent: '#000000',
+        selectionBackground: 'rgba(244, 63, 94, 0.3)',
+        black: '#0f172a',
+        red: '#f43f5e',
+        green: '#10b981',
+        yellow: '#f59e0b',
+        blue: '#3b82f6',
+        magenta: '#d946ef',
+        cyan: '#06b6d4',
+        white: '#f8fafc',
+      },
+      allowTransparency: true,
+      scrollback: 5000,
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalRef.current);
+    
+    const tryFit = () => {
+      try {
+        if (terminalRef.current && terminalRef.current.clientWidth > 0 && terminalRef.current.clientHeight > 0) {
+          fitAddon.fit();
+        }
+      } catch (e) {
+        console.warn('xterm fit failed', e);
+      }
+    };
+
+    // Initial fit with a small delay to ensure container is ready
+    const fitTimeout = setTimeout(tryFit, 100);
+
+    xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    connect();
+
+    term.onData((data) => {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ type: 'input', data }));
+      }
+    });
+
+    const handleResize = () => {
+      tryFit();
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(fitTimeout);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      socketRef.current?.close();
+      term.dispose();
+    };
+  }, [osMode]);
 
   return (
-    <div 
-      className="flex flex-col h-full bg-[#0c0c0c] font-mono text-xs sm:text-sm p-4 overflow-hidden" 
-      onClick={() => inputRef.current?.focus()}
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-full h-full glass-dark rounded-b-lg overflow-hidden p-4"
     >
-      <div ref={scrollRef} className="flex-1 overflow-auto space-y-0.5 relative z-10 selection:bg-white/20 scrollbar-hide">
-        {history.map((line, i) => (
-          <div key={i} className={`whitespace-pre-wrap break-words ${getLineStyles(line.type)}`}>
-            {line.text}
-          </div>
-        ))}
-      </div>
-
-      <form onSubmit={handleCommand} className="mt-2 flex gap-0 group relative z-10">
-        <span className="text-emerald-400 shrink-0 font-bold select-none mr-2">
-            {getPrompt()}
-        </span>
-        <input 
-          ref={inputRef}
-          autoFocus
-          className="flex-1 bg-transparent border-none outline-none text-white caret-slate-400 placeholder-white/20"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          spellCheck={false}
-          autoComplete="off"
-        />
-      </form>
-    </div>
+      <div ref={terminalRef} className="w-full h-full" />
+    </motion.div>
   );
 };
 

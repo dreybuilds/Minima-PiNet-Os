@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { AppId, WindowState } from '../types';
+import { motion } from 'motion/react';
 
 interface TaskbarProps {
   windows: WindowState[];
@@ -10,38 +11,49 @@ interface TaskbarProps {
 
 const Taskbar: React.FC<TaskbarProps> = ({ windows, activeId, onAppClick }) => {
   return (
-    <footer className="h-14 fixed bottom-2 left-1/2 -translate-x-1/2 glass-dark z-50 rounded-2xl flex items-center px-2 gap-1 border border-white/10 shadow-2xl">
+    <motion.footer 
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      className="h-16 fixed bottom-4 left-1/2 -translate-x-1/2 glass-dark z-50 rounded-3xl flex items-center px-3 gap-2 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+    >
       {windows.map(win => (
-        <button
+        <motion.button
           key={win.id}
           onClick={() => onAppClick(win.id)}
-          className={`relative group w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${
-            activeId === win.id ? 'bg-white/10 scale-105' : 'hover:bg-white/5'
+          whileHover={{ y: -5, scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className={`relative group w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 ${
+            activeId === win.id ? 'bg-white/15 shadow-lg shadow-white/5' : 'hover:bg-white/5'
           }`}
         >
-          {win.id === 'minima-node' && <MinimaIcon />}
-          {win.id === 'cluster-manager' && <ClusterIcon />}
-          {win.id === 'imager-utility' && <ImagerIcon />}
-          {win.id === 'depai-executor' && <DePAIIcon />}
-          {win.id === 'system-monitor' && <MonitorIcon />}
-          {win.id === 'terminal' && <TerminalIcon />}
-          {win.id === 'ai-assistant' && <AiIcon />}
-          {win.id === 'wallet' && <WalletIcon />}
-          {win.id === 'maxima-messenger' && <MaximaIcon />}
-          {win.id === 'file-explorer' && <ExplorerIcon />}
-          {win.id === 'settings' && <SettingsIcon />}
-          {win.id === 'visual-studio' && <VisualIcon />}
+          <div className="w-7 h-7 flex items-center justify-center">
+            {win.id === 'minima-node' && <MinimaIcon />}
+            {win.id === 'cluster-manager' && <ClusterIcon />}
+            {win.id === 'imager-utility' && <ImagerIcon />}
+            {win.id === 'depai-executor' && <DePAIIcon />}
+            {win.id === 'system-monitor' && <MonitorIcon />}
+            {win.id === 'terminal' && <TerminalIcon />}
+            {win.id === 'ai-assistant' && <AiIcon />}
+            {win.id === 'wallet' && <WalletIcon />}
+            {win.id === 'maxima-messenger' && <MaximaIcon />}
+            {win.id === 'file-explorer' && <ExplorerIcon />}
+            {win.id === 'settings' && <SettingsIcon />}
+            {win.id === 'visual-studio' && <VisualIcon />}
+          </div>
 
           {win.isOpen && (
-              <div className={`absolute -bottom-1 w-1 h-1 rounded-full ${activeId === win.id ? 'bg-blue-400 w-3' : 'bg-slate-500'} transition-all`} />
+              <motion.div 
+                layoutId="active-dot"
+                className={`absolute -bottom-1.5 w-1 h-1 rounded-full ${activeId === win.id ? 'bg-pink-500 w-4 shadow-[0_0_8px_rgba(236,72,153,0.8)]' : 'bg-slate-500'} transition-all`} 
+              />
           )}
 
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10">
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-slate-900/90 backdrop-blur-md text-white text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap border border-white/10 shadow-xl translate-y-2 group-hover:translate-y-0">
             {win.title}
           </div>
-        </button>
+        </motion.button>
       ))}
-    </footer>
+    </motion.footer>
   );
 };
 

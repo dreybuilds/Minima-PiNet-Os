@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { NodeStats, SystemStats } from '../types';
+import { motion } from 'motion/react';
 
 interface TopBarProps {
   nodeStats: NodeStats;
@@ -18,7 +19,11 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
   }, []);
 
   return (
-    <header className="h-10 fixed top-0 left-0 right-0 glass-dark z-50 flex items-center justify-between px-4 border-b border-white/5">
+    <motion.header 
+      initial={{ y: -40 }}
+      animate={{ y: 0 }}
+      className="h-10 fixed top-0 left-0 right-0 glass-dark z-50 flex items-center justify-between px-4 border-b border-white/5"
+    >
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-[#C51A4A] rounded flex items-center justify-center shadow-lg">
@@ -43,10 +48,16 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
         {onSwitchOS && (
             <button 
                 onClick={onSwitchOS}
-                className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-300 transition-all hover:scale-105 active:scale-95"
+                className="hidden sm:flex items-center p-1 bg-black/40 border border-white/10 rounded-full transition-all hover:bg-black/60 active:scale-95 relative group"
+                title={`Switch to ${currentOS === 'pinet' ? 'Raspbian' : 'PiNet'} OS`}
             >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path d="M12 4v16"></path><path d="M4 12h16"></path></svg>
-                Switch OS
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className={`flex items-center justify-center w-24 h-6 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all z-10 ${currentOS === 'pinet' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400'}`}>
+                  PiNet OS
+                </div>
+                <div className={`flex items-center justify-center w-24 h-6 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all z-10 ${currentOS === 'raspbian' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400'}`}>
+                  Raspbian
+                </div>
             </button>
         )}
 
@@ -66,7 +77,7 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
           <span className="hidden xs:inline text-slate-400">{time.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };
 
