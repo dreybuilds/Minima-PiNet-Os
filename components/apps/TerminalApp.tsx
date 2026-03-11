@@ -93,7 +93,10 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
     const tryFit = () => {
       try {
         if (terminalRef.current && terminalRef.current.clientWidth > 0 && terminalRef.current.clientHeight > 0) {
-          fitAddon.fit();
+          // Check if xterm is fully initialized before fitting to prevent 'dimensions' error
+          if ((term as any)._core && (term as any)._core._renderService) {
+            fitAddon.fit();
+          }
         }
       } catch (e) {
         console.warn('xterm fit failed', e);
@@ -117,13 +120,28 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
     const handleResize = () => {
       tryFit();
     };
-    window.addEventListener('resize', handleResize);
+    
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       clearTimeout(fitTimeout);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      socketRef.current?.close();
+      
+      // Clear refs before closing to prevent handlers from firing on disposed terminal
+      xtermRef.current = null;
+      
+      if (socketRef.current) {
+        socketRef.current.onclose = null; // Prevent reconnect loop on unmount
+        socketRef.current.close();
+      }
+      
       term.dispose();
     };
   }, [osMode]);
