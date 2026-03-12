@@ -5,7 +5,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { motion } from 'motion/react';
 
 interface TerminalAppProps {
-  osMode?: 'pinet' | 'raspbian';
+  osMode?: 'pinet' | 'raspbian' | 'ubuntu' | 'debian';
   onOpenApp?: (appId: string) => void;
 }
 
@@ -17,6 +17,18 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = () => {
+    if (window.electron) {
+      if (!xtermRef.current) return;
+      window.electron.terminalStart();
+      window.electron.onTerminalData((data) => {
+        if (xtermRef.current) xtermRef.current.write(data);
+      });
+      xtermRef.current.onData((data) => {
+        window.electron!.terminalInput(data);
+      });
+      return;
+    }
+
     if (socketRef.current?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -94,7 +106,8 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
       try {
         if (terminalRef.current && terminalRef.current.clientWidth > 0 && terminalRef.current.clientHeight > 0) {
           // Check if xterm is fully initialized before fitting to prevent 'dimensions' error
-          if ((term as any)._core && (term as any)._core._renderService) {
+          const core = (term as any)._core;
+          if (core && !core._isDisposed && core._renderService && core._renderService._renderer && core._renderService._renderer.value) {
             fitAddon.fit();
           }
         }
@@ -142,6 +155,19 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
         socketRef.current.close();
       }
       
+      // Hack to prevent xterm.js from throwing if animation frames fire after dispose
+      try {
+        const core = (term as any)._core;
+        if (core && core._renderService) {
+          Object.defineProperty(core._renderService, 'dimensions', {
+            get: () => ({
+              css: { canvas: { width: 0, height: 0 }, cell: { width: 0, height: 0 } },
+              device: { canvas: { width: 0, height: 0 }, cell: { width: 0, height: 0 }, char: { width: 0, height: 0, left: 0, top: 0 } }
+            })
+          });
+        }
+      } catch (e) {}
+
       term.dispose();
     };
   }, [osMode]);

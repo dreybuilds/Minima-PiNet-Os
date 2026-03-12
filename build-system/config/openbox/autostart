@@ -1,0 +1,7 @@
+# PiNetOS Autostart
+xset s off
+xset s noblank
+xset -dpms
+
+# Start PiNetOS Electron App
+/opt/pinetos/app/pinetos-desktop --no-sandbox --kiosk &

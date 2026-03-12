@@ -1,0 +1,12 @@
+[Unit]
+Description=PiNet Edge Compute Runtime (k3s)
+After=network-online.target containerd.service
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/k3s server --disable traefik --disable servicelb
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

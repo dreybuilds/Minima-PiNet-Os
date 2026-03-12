@@ -1,0 +1,9 @@
+[Unit]
+Description=PiNetOS Auto Updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/pinetos/scripts/check-updates.sh

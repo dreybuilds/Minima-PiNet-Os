@@ -1,0 +1,16 @@
+[Unit]
+Description=PiNetOS Desktop Environment
+After=systemd-user-sessions.service network.target sound.target
+Conflicts=getty@tty1.service
+
+[Service]
+User=pi
+Group=pi
+PAMName=login
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/startx /etc/X11/Xsession /opt/pinetos/app/pinetos-desktop -- :0 -nolisten tcp vt1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

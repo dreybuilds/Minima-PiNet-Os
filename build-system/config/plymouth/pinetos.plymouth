@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=PiNetOS
+Description=PiNetOS Boot Splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/pinetos
+ScriptFile=/usr/share/plymouth/themes/pinetos/pinetos.script

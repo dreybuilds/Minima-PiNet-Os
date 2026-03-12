@@ -45,6 +45,50 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
       </div>
 
       <div className="flex items-center gap-4 text-xs font-medium">
+        <a 
+          href="/api/download-os-build"
+          download
+          className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-full transition-colors border border-emerald-500/30"
+          title="Download PiNetOS Build System"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span className="font-bold tracking-wider text-[10px] uppercase">OS Build System</span>
+        </a>
+        <a 
+          href="/api/download-os-image"
+          download
+          className="hidden md:flex items-center gap-2 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-full transition-colors border border-purple-500/30"
+          title="Download PiNetOS Raspberry Pi Image"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span className="font-bold tracking-wider text-[10px] uppercase">Pi Image</span>
+        </a>
+        <a 
+          href="/api/download-electron"
+          download
+          className="hidden md:flex items-center gap-2 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-full transition-colors border border-blue-500/30"
+          title="Download PiNetOS Electron Desktop"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span className="font-bold tracking-wider text-[10px] uppercase">Desktop App</span>
+        </a>
+        <a 
+          href="/api/download-pinetos"
+          download
+          className="hidden md:flex items-center gap-2 px-3 py-1 bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 rounded-full transition-colors border border-pink-500/30"
+          title="Download PiNetOS Build Artifacts"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span className="font-bold tracking-wider text-[10px] uppercase">Export OS</span>
+        </a>
         {onSwitchOS && (
             <button 
                 onClick={onSwitchOS}

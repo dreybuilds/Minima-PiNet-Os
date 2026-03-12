@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NodeStats } from '../../types';
 
 interface MinimaNodeAppProps {
@@ -7,6 +7,16 @@ interface MinimaNodeAppProps {
 }
 
 const MinimaNodeApp: React.FC<MinimaNodeAppProps> = ({ stats }) => {
+  const [minimaStatus, setMinimaStatus] = useState<any>(null);
+
+  useEffect(() => {
+    if (window.electron) {
+      window.electron.checkMinima().then(setMinimaStatus);
+    }
+  }, []);
+
+  const isActive = minimaStatus ? minimaStatus.status === 'active' : true;
+
   return (
     <div className="p-8 h-full space-y-8 overflow-y-auto">
       <div className="flex items-center justify-between">
@@ -15,8 +25,10 @@ const MinimaNodeApp: React.FC<MinimaNodeAppProps> = ({ stats }) => {
           <p className="text-slate-400">Mainnet v{stats.version}</p>
         </div>
         <div className="px-4 py-2 rounded-full glass border border-white/10 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-semibold text-emerald-500 uppercase tracking-widest">Active & Protected</span>
+            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className={`text-xs font-semibold ${isActive ? 'text-emerald-500' : 'text-red-500'} uppercase tracking-widest`}>
+              {isActive ? 'Active & Protected' : 'Inactive'}
+            </span>
         </div>
       </div>
 

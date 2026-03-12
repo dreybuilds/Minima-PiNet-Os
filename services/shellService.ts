@@ -259,7 +259,7 @@ class ShellService {
     return current;
   }
 
-  execute(rawInput: string): { output: { text: string; type: any }[]; newPath?: string } {
+  execute(rawInput: string): { output: { text: string; type: any }[]; newPath?: string; openApp?: string } {
     const trimmed = rawInput.trim();
     if (!trimmed) return { output: [] };
 

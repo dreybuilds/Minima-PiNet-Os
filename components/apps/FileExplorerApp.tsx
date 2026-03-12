@@ -11,7 +11,26 @@ const FileExplorerApp: React.FC = () => {
     updateView();
   }, [currentPath]);
 
-  const updateView = () => {
+  const updateView = async () => {
+      if (window.electron) {
+        try {
+          const files = await window.electron.readDir(currentPath);
+          if (Array.isArray(files)) {
+            setNodes(files.map((f: any) => ({
+              name: f.name,
+              type: f.isDirectory ? 'dir' : 'file',
+              content: '',
+              permissions: 'rwxr-xr-x',
+              owner: 'pinet',
+              size: 0,
+              modified: Date.now()
+            })));
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to read dir', e);
+        }
+      }
       const dir = shell.resolvePath(currentPath);
       if (dir && dir.children) {
           setNodes(dir.children);

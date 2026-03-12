@@ -23,7 +23,7 @@ import { clusterService } from './services/clusterService';
 import { settingsService } from './services/settingsService';
 import { systemService } from './services/systemService';
 
-type OSMode = 'pinet' | 'raspbian';
+type OSMode = 'pinet' | 'raspbian' | 'ubuntu' | 'debian';
 type TransitionState = 'idle' | 'shutting-down' | 'booting';
 
 interface WindowContainerProps {
@@ -71,6 +71,7 @@ const WindowContainer: React.FC<WindowContainerProps> = ({ title, children, onCl
 const App: React.FC = () => {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [currentOS, setCurrentOS] = useState<OSMode>('pinet');
+  const [osInfo, setOsInfo] = useState<any>(null);
   const [transitionState, setTransitionState] = useState<TransitionState>('idle');
   const [bootLog, setBootLog] = useState<string[]>([]);
   
@@ -108,6 +109,19 @@ const App: React.FC = () => {
   const [sysStats, setSysStats] = useState<SystemStats>({
     cpu: 24, ram: 45, temp: 42, disk: 12
   });
+
+  // Fetch OS Info on mount
+  useEffect(() => {
+    fetch('/api/os-info')
+      .then(res => res.json())
+      .then(data => {
+        setOsInfo(data);
+        if (data.defaultContext) {
+          setCurrentOS(data.defaultContext as OSMode);
+        }
+      })
+      .catch(err => console.error("Failed to fetch OS info:", err));
+  }, []);
 
   // Subscriptions to services
   useEffect(() => {
@@ -206,14 +220,18 @@ const App: React.FC = () => {
       "VMM: Saving CPU State to NVMe Region 0x8000...",
     ]);
 
-    const target = currentOS === 'pinet' ? 'raspbian' : 'pinet';
+    const target = currentOS === 'pinet' ? (osInfo?.osName || 'raspbian') : 'pinet';
     
     // Animate loglines
+    const hostOSName = osInfo?.osName === 'raspbian' ? 'Debian 13 (Trixie) Pixel Desktop' : 
+                       osInfo?.osName === 'ubuntu' ? 'Ubuntu 20.04 LTS' : 
+                       osInfo?.osName === 'debian' ? 'Debian GNU/Linux' : 'Host OS';
+
     const logs = [
         "VMM: CPU State Saved. (128ms)",
         `HYPERVISOR: Loading Kernel Image: ${target}_kernel.img`,
         "BOOT: Verifying SHA256 Checksum... OK",
-        `INIT: Starting ${target === 'raspbian' ? 'Debian 13 (Trixie) Pixel Desktop' : 'PiNet Web3 Compositor'}...`,
+        `INIT: Starting ${target !== 'pinet' ? hostOSName : 'PiNet Web3 Compositor'}...`,
         "SYSTEMD: Mounting /dev/nvme0n1p2 to /",
         "SYSTEMD: Starting Network Manager...",
         "SYSTEMD: Starting Graphical Interface..."
@@ -231,7 +249,7 @@ const App: React.FC = () => {
     setTransitionState('idle');
     setBootLog([]);
     setRaspMenuOpen(false);
-    if (target === 'raspbian') setRaspTermOpen(true);
+    if (target !== 'pinet') setRaspTermOpen(true);
   };
 
   // Raspbian Drag Logic
@@ -288,8 +306,13 @@ const App: React.FC = () => {
       );
   }
 
-  // Raspbian Desktop Render
-  if (currentOS === 'raspbian') {
+  // Host OS Desktop Render
+  if (currentOS !== 'pinet') {
+    const isUbuntu = currentOS === 'ubuntu';
+    const isDebian = currentOS === 'debian';
+    const hostName = isUbuntu ? 'Ubuntu' : isDebian ? 'Debian' : 'Raspbian';
+    const hostUser = isUbuntu ? 'user@ubuntu' : isDebian ? 'user@debian' : 'pi@raspberrypi';
+    
     return (
         <div 
             className="w-screen h-screen bg-slate-300 relative overflow-hidden font-sans selection:bg-red-200 cursor-default animate-in fade-in duration-1000"
@@ -297,8 +320,8 @@ const App: React.FC = () => {
             onMouseUp={handleMouseUp}
         >
              {/* Wallpaper */}
-            <div className="absolute inset-0 bg-[url('https://www.raspberrypi.com/app/uploads/2018/03/RPi-Logo-Reg-SCREEN.png')] bg-center bg-no-repeat bg-white opacity-10 pointer-events-none" />
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=2400')] bg-cover opacity-90" />
+            <div className={`absolute inset-0 bg-center bg-no-repeat bg-white opacity-10 pointer-events-none ${isUbuntu ? 'bg-[url("https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png")]' : isDebian ? 'bg-[url("https://www.debian.org/logos/openlogo-nd-100.png")]' : 'bg-[url("https://www.raspberrypi.com/app/uploads/2018/03/RPi-Logo-Reg-SCREEN.png")]'}`} />
+            <div className={`absolute inset-0 bg-cover opacity-90 ${isUbuntu ? 'bg-[url("https://images.unsplash.com/photo-1596495578065-6e0763fa1178?q=80&w=2400")]' : isDebian ? 'bg-[url("https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=2400")]' : 'bg-[url("https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=2400")]'}`} />
 
             {/* Top Panel */}
             <div className="absolute top-0 w-full h-8 bg-slate-200 shadow-md flex items-center justify-between px-2 z-50">
@@ -307,7 +330,13 @@ const App: React.FC = () => {
                         onClick={() => setRaspMenuOpen(!raspMenuOpen)}
                         className={`flex items-center gap-2 px-2 py-1 hover:bg-slate-300 rounded transition-colors ${raspMenuOpen ? 'bg-slate-300 shadow-inner' : ''}`}
                     >
-                        <img src="https://assets.raspberrypi.com/static/raspberry-pi-logo-f6334c9c27b0b8d5a1900115d7f1c9c8.svg" className="w-5 h-5" alt="Pi" />
+                        {isUbuntu ? (
+                          <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold">U</div>
+                        ) : isDebian ? (
+                          <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-white text-[10px] font-bold">D</div>
+                        ) : (
+                          <img src="https://assets.raspberrypi.com/static/raspberry-pi-logo-f6334c9c27b0b8d5a1900115d7f1c9c8.svg" className="w-5 h-5" alt="Pi" />
+                        )}
                         <span className="text-sm font-bold text-slate-700">Menu</span>
                     </button>
                     <div className="w-px h-4 bg-slate-400" />
@@ -395,7 +424,7 @@ const App: React.FC = () => {
                         onMouseDown={handleMouseDown}
                         className="bg-slate-300 px-2 py-1 flex justify-between items-center rounded-t-lg cursor-move select-none active:bg-slate-400 transition-colors"
                     >
-                        <span className="text-xs font-bold text-slate-700">pi@raspberrypi: ~</span>
+                        <span className="text-xs font-bold text-slate-700">{hostUser}: ~</span>
                         <div className="flex gap-1.5" onMouseDown={(e) => e.stopPropagation()}>
                             <button 
                                 onClick={() => setRaspTermOpen(false)}
@@ -409,7 +438,7 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     <div className="p-0 flex-1 overflow-hidden">
-                        <TerminalApp osMode="raspbian" onOpenApp={(appId) => openApp(appId as AppId)} />
+                        <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} />
                     </div>
                 </div>
             )}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SystemStats } from '../../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
@@ -8,6 +8,24 @@ interface SystemMonitorAppProps {
 }
 
 const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
+  const [realStats, setRealStats] = useState<any>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (window.electron) {
+      const fetchStats = async () => {
+        const metrics = await window.electron!.getHardwareMetrics();
+        setRealStats(metrics);
+      };
+      fetchStats();
+      interval = setInterval(fetchStats, 2000);
+    }
+    return () => clearInterval(interval);
+  }, []);
+
+  const displayCpu = realStats ? realStats.cpuUsage * 100 : stats.cpu;
+  const displayRam = realStats ? (1 - realStats.freeMem / realStats.totalMem) * 100 : stats.ram;
+
   // Generate mock history data
   const data = React.useMemo(() => {
     return Array.from({ length: 20 }, (_, i) => ({
@@ -29,7 +47,7 @@ const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
         <div className="glass p-6 rounded-2xl border border-white/5 space-y-4">
           <div className="flex justify-between items-end">
              <span className="text-sm font-semibold text-slate-400 uppercase tracking-widest">CPU Load</span>
-             <span className="text-2xl font-mono text-blue-400">{Math.round(stats.cpu)}%</span>
+             <span className="text-2xl font-mono text-blue-400">{Math.round(displayCpu)}%</span>
           </div>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -49,7 +67,7 @@ const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
         <div className="glass p-6 rounded-2xl border border-white/5 space-y-4">
           <div className="flex justify-between items-end">
              <span className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Memory Usage</span>
-             <span className="text-2xl font-mono text-emerald-400">{Math.round(stats.ram)}%</span>
+             <span className="text-2xl font-mono text-emerald-400">{Math.round(displayRam)}%</span>
           </div>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">

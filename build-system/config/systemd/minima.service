@@ -1,0 +1,17 @@
+[Unit]
+Description=Minima Blockchain Node
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/minima
+ExecStart=/usr/bin/java -jar /opt/minima/minima.jar -daemon -rpcenable
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
