@@ -59,17 +59,7 @@ const BootSplashScreen: React.FC<BootSplashScreenProps> = ({ onComplete }) => {
       setStatus('configuring');
       addLog("Configuring Application Compatibility Matrix...");
       
-      const autoOpenApps: AppId[] = ['minima-node', 'terminal'];
-      
-      if (detectedHat === 'AI_NPU') {
-        addLog("Optimizing for AI: Enabling DePAI Executor & Neural Gateway.");
-        autoOpenApps.push('depai-executor');
-        autoOpenApps.push('ai-assistant');
-      } else if (detectedHat === 'SSD_NVME') {
-        addLog("Optimizing for Storage: Enabling High-Speed File Explorer.");
-        autoOpenApps.push('file-explorer');
-        autoOpenApps.push('visual-studio');
-      }
+      const autoOpenApps: AppId[] = [];
       
       addLog("Finalizing System State...");
       setProgress(90);

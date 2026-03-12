@@ -18,6 +18,48 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
     return () => clearInterval(timer);
   }, []);
 
+  const handleDownload = async (e: React.MouseEvent<HTMLAnchorElement>, url: string, filename: string) => {
+    e.preventDefault();
+    const target = e.currentTarget;
+    
+    try {
+      target.style.opacity = '0.5';
+      target.style.pointerEvents = 'none';
+      
+      // Construct absolute URL to ensure fetch works correctly in iframe
+      const downloadUrl = new URL(url, window.location.origin).href;
+      
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Download failed with status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: try direct link if fetch fails
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank'; // Try opening in new tab to avoid top-level navigation error
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      target.style.opacity = '1';
+      target.style.pointerEvents = 'auto';
+    }
+  };
+
   return (
     <motion.header 
       initial={{ y: -40 }}
@@ -47,7 +89,7 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
       <div className="flex items-center gap-4 text-xs font-medium">
         <a 
           href="/api/download-os-build"
-          download
+          onClick={(e) => handleDownload(e, '/api/download-os-build', 'PiNetOS-Build-System.zip')}
           className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-full transition-colors border border-emerald-500/30"
           title="Download PiNetOS Build System"
         >
@@ -58,7 +100,7 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
         </a>
         <a 
           href="/api/download-os-image"
-          download
+          onClick={(e) => handleDownload(e, '/api/download-os-image', 'PiNetOS-RaspberryPi.img')}
           className="hidden md:flex items-center gap-2 px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-full transition-colors border border-purple-500/30"
           title="Download PiNetOS Raspberry Pi Image"
         >
@@ -69,7 +111,7 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
         </a>
         <a 
           href="/api/download-electron"
-          download
+          onClick={(e) => handleDownload(e, '/api/download-electron', 'PiNetOS-Electron-Desktop.zip')}
           className="hidden md:flex items-center gap-2 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-full transition-colors border border-blue-500/30"
           title="Download PiNetOS Electron Desktop"
         >
@@ -79,8 +121,19 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
           <span className="font-bold tracking-wider text-[10px] uppercase">Desktop App</span>
         </a>
         <a 
+          href="/api/download-os-docs"
+          onClick={(e) => handleDownload(e, '/api/download-os-docs', 'PiNetOS-Documentation.zip')}
+          className="hidden lg:flex items-center gap-2 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-full transition-colors border border-amber-500/30"
+          title="Download PiNetOS Documentation"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span className="font-bold tracking-wider text-[10px] uppercase">Docs</span>
+        </a>
+        <a 
           href="/api/download-pinetos"
-          download
+          onClick={(e) => handleDownload(e, '/api/download-pinetos', 'PiNetOS-Enterprise.zip')}
           className="hidden md:flex items-center gap-2 px-3 py-1 bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 rounded-full transition-colors border border-pink-500/30"
           title="Download PiNetOS Build Artifacts"
         >

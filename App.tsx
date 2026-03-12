@@ -163,15 +163,25 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSysStats(prev => ({
-        cpu: Math.max(10, Math.min(95, prev.cpu + (Math.random() * 10 - 5))),
-        ram: Math.max(40, Math.min(60, prev.ram + (Math.random() * 2 - 1))),
-        temp: Math.max(38, Math.min(65, prev.temp + (Math.random() * 4 - 2))),
-        disk: prev.disk
-      }));
-    }, 3000);
-    return () => clearInterval(interval);
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/system-stats');
+        if (res.ok) {
+          const data = await res.json();
+          setSysStats(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch system stats:", err);
+      }
+    };
+
+    // Initial delay to allow server to start
+    const initialTimeout = setTimeout(fetchStats, 2000);
+    const interval = setInterval(fetchStats, 5000);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
   const openApp = (id: AppId) => {
@@ -291,7 +301,9 @@ const App: React.FC = () => {
                 <div className="w-full max-w-2xl space-y-2 z-40">
                     <div className="flex items-center gap-4 mb-8">
                         <div className="w-8 h-8 bg-white/10 animate-spin" />
-                        <h2 className="text-xl font-bold tracking-widest text-pink-500">RPI5 HYPERVISOR // BOOTLOADER v2.4</h2>
+                        <h2 className="text-xl font-bold tracking-widest text-pink-500">
+                          {osInfo?.hardwareModel?.toUpperCase() || 'RPI5'} HYPERVISOR // BOOTLOADER v2.4
+                        </h2>
                     </div>
                     {bootLog.map((log, i) => (
                     <div key={i} className="text-sm text-slate-400 border-l-2 border-slate-700 pl-3">
