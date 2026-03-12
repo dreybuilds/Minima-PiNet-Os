@@ -161,11 +161,11 @@ const TopBar: React.FC<TopBarProps> = ({ nodeStats, systemStats, onSwitchOS, cur
         <div className="hidden sm:flex items-center gap-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
           <div className="flex items-center gap-1.5 hover:text-white transition-colors cursor-help" title="System Load">
             <svg className="w-3 h-3 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <span>{Math.round(systemStats.cpu)}%</span>
+            <span>{Math.round(systemStats?.cpu ?? 0)}%</span>
           </div>
           <div className="flex items-center gap-1.5 hover:text-white transition-colors cursor-help" title="Core Temperature">
             <svg className="w-3 h-3 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M5 5l14 14M19 5L5 19"/></svg>
-            <span>{systemStats.temp}°C</span>
+            <span>{Math.round(systemStats?.temp ?? 0)}°C</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-slate-200 font-bold tabular-nums">

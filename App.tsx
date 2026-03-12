@@ -151,7 +151,6 @@ const App: React.FC = () => {
 
   // Handle completion of boot sequence with detected nodes and compatible apps
   const handleSetupComplete = (nodes: ClusterNode[], autoOpenApps: AppId[]) => {
-      clusterService.setNodes(nodes);
       setIsSetupComplete(true);
       
       // Auto-open apps based on hardware compatibility
@@ -165,10 +164,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/system-stats');
+        const url = `${window.location.origin}/api/system-stats`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setSysStats(data);
+        } else {
+          console.warn(`System stats fetch failed with status: ${res.status}`);
         }
       } catch (err) {
         console.error("Failed to fetch system stats:", err);

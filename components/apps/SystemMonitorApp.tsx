@@ -10,6 +10,8 @@ interface SystemMonitorAppProps {
 const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
   const [realStats, setRealStats] = useState<any>(null);
 
+  if (!stats) return null;
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (window.electron) {
@@ -23,8 +25,8 @@ const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const displayCpu = realStats ? realStats.cpuUsage * 100 : stats.cpu;
-  const displayRam = realStats ? (1 - realStats.freeMem / realStats.totalMem) * 100 : stats.ram;
+  const displayCpu = realStats ? realStats.cpuUsage * 100 : (stats.cpu ?? 0);
+  const displayRam = realStats ? (1 - realStats.freeMem / realStats.totalMem) * 100 : (stats.ram ?? 0);
 
   // Generate mock history data
   const data = React.useMemo(() => {
@@ -87,7 +89,7 @@ const SystemMonitorApp: React.FC<SystemMonitorAppProps> = ({ stats }) => {
         <div className="glass p-6 rounded-2xl border border-white/5 space-y-4 md:col-span-2">
           <div className="flex justify-between items-end">
              <span className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Thermal Monitoring</span>
-             <span className="text-2xl font-mono text-amber-400">{Math.round(stats.temp)}°C</span>
+             <span className="text-2xl font-mono text-amber-400">{Math.round(stats.temp ?? 0)}°C</span>
           </div>
           <div className="h-40 w-full">
             <ResponsiveContainer width="100%" height="100%">

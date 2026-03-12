@@ -26,6 +26,15 @@ async function startServer() {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    
+    if (req.url.startsWith('/api/')) {
+      console.log(`[API] ${req.method} ${req.url}`);
+    }
     next();
   });
 
@@ -61,10 +70,38 @@ async function startServer() {
         const msg = JSON.parse(message);
         if (msg.type === "input") {
           if (msg.data.includes("export OS_MODE=")) {
-            const mode = msg.data.match(/export OS_MODE=(\w+)/)?.[1];
+            const mode = msg.data.match(/export OS_MODE=(\w+)/)?.[1] || 'pinet';
             
-            // Inject the pinet function
-            const pinetFunc = `
+            // Inject the pinet function and other mocks with a small delay to ensure shell is ready
+            setTimeout(() => {
+              const mocks = `
+# PiNet OS & Debian Trixie Simulation Layer
+export HOME=/home/pi
+mkdir -p /home/pi/projects
+mkdir -p /var/minima
+mkdir -p /etc/pinet
+touch /home/pi/README.txt
+echo "Welcome to PiNet OS Trixie Edition" > /home/pi/README.txt
+touch /var/minima/chain.db
+touch /var/minima/wallet.db
+touch /etc/pinet/config.json
+cd /home/pi
+
+# Welcome Message Function
+show_welcome() {
+  local mode=$1
+  echo -e "\\033[0;37mLinux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64\\033[0m"
+  echo ""
+  echo "The programs included with the Debian GNU/Linux system are free software;"
+  echo "the exact distribution terms for each program are described in the"
+  echo "individual files in /usr/share/doc/*/copyright."
+  echo ""
+  echo "Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent"
+  echo "permitted by applicable law."
+  echo -e "Last login: $(date '+%a %b %d %H:%M:%S %Y') from 192.168.1.50"
+  echo ""
+}
+
 pinet() {
   case "$1" in
     open)
@@ -73,213 +110,191 @@ pinet() {
       ;;
     install)
       echo -e "\\033[1;34mInstalling PiNet OS components...\\033[0m"
-      sleep 1
+      sleep 0.5
       echo "Unpacking minima-node..."
-      sleep 1
+      sleep 0.5
       echo "Setting up cluster-manager..."
-      sleep 1
+      sleep 0.5
       echo -e "\\033[1;32mInstallation complete. You can now use 'pinet open <app_id>' to launch applications.\\033[0m"
       echo "Available apps: minima-node, system-monitor, terminal, ai-assistant, wallet, maxima-messenger, cluster-manager, depai-executor, imager-utility, file-explorer, settings, visual-studio"
       ;;
     status)
       echo -e "\\033[1;36mPiNet OS Status:\\033[0m"
-      echo "  Node: Synced"
-      echo "  Peers: 12"
-      echo "  Block Height: 1,234,567"
-      echo "  Cluster: 3 Nodes Active"
-      ;;
-    start)
-      echo -e "\\033[1;32mStarting PiNet services...\\033[0m"
-      sleep 1
-      echo "Minima node started."
-      ;;
-    stop)
-      echo -e "\\033[1;31mStopping PiNet services...\\033[0m"
-      sleep 1
-      echo "Minima node stopped."
-      ;;
-    update)
-      echo -e "\\033[1;34mChecking for PiNet updates...\\033[0m"
-      sleep 1
-      echo "PiNet is up to date (v2.4.1)."
-      ;;
-    config)
-      echo -e "\\033[1;33mOpening PiNet configuration...\\033[0m"
-      echo "PINET_CMD:OPEN:settings"
-      ;;
-    logs)
-      echo -e "\\033[1;37mFetching latest PiNet logs...\\033[0m"
-      echo "[INFO] Node synchronized."
-      echo "[INFO] Maxima connection established."
-      echo "[WARN] High CPU usage detected on cluster node 2."
+      echo "  Node: ${pinetState.minima.status}"
+      echo "  Peers: ${pinetState.minima.peers}"
+      echo "  Block Height: ${pinetState.minima.blockHeight}"
+      echo "  Cluster: ${pinetState.cluster.length} Nodes Active"
       ;;
     cluster)
       echo -e "\\033[1;35mCluster Status:\\033[0m"
-      echo "  Node 1 (Master): Online (192.168.1.100)"
-      echo "  Node 2 (Worker): Online (192.168.1.101)"
-      echo "  Node 3 (Worker): Offline (192.168.1.102)"
-      ;;
-    deploy)
-      echo -e "\\033[1;32mDeploying smart contract to Minima network...\\033[0m"
-      sleep 2
-      echo "Contract deployed successfully. TxID: 0x123456789abcdef"
-      ;;
-    network)
-      echo -e "\\033[1;36mPiNet Network Interfaces:\\033[0m"
-      echo "  eth0: UP 192.168.1.100"
-      echo "  wlan0: DOWN"
-      echo "  tun0: UP 10.8.0.2 (PiNet VPN)"
-      ;;
-    storage)
-      echo -e "\\033[1;33mPiNet Storage Status:\\033[0m"
-      echo "  /dev/root    30G   15G   14G  52% /"
-      echo "  /dev/nvme0n1 250G  50G  200G  20% /mnt/pinet-data"
-      ;;
-    backup)
-      echo -e "\\033[1;34mInitiating PiNet state backup...\\033[0m"
-      sleep 2
-      echo "Backup completed: /mnt/pinet-data/backups/pinet_backup_$(date +%Y%m%d).tar.gz"
+      echo "  ID   ROLE    HAT       STATUS"
+      ${pinetState.cluster.map(n => `echo "  ${n.id.padEnd(4)} ${n.name.padEnd(7)} ${n.hat.padEnd(9)} ${n.status.toUpperCase()}"`).join('\n      ')}
       ;;
     version|info)
-      echo -e "\\033[1;35mPiNet OS v2.4.1-LTS\\033[0m"
-      echo "Architecture: $(uname -m)"
-      echo "Kernel: $(uname -r)"
-      echo "Minima Node: v1.0.32"
+      echo -e "\\033[1;35mPiNet OS v2.5.0-LTS (Trixie Base)\\033[0m"
+      echo "Architecture: aarch64"
+      echo "Kernel: 6.6.20+rpt-rpi-v8"
+      echo "Minima Node: v1.0.35"
       ;;
     help|*)
       echo -e "\\033[1;37mPiNet OS Command Line Interface\\033[0m"
       echo "Usage: pinet <command> [args]"
       echo ""
-      echo "Commands:"
-      echo "  open <app>   Launch a PiNet application"
-      echo "  install      Install PiNet OS components"
-      echo "  status       Show PiNet node and cluster status"
-      echo "  start        Start PiNet background services"
-      echo "  stop         Stop PiNet background services"
-      echo "  update       Check for and install updates"
-      echo "  config       Open PiNet settings"
-      echo "  logs         View system logs"
-      echo "  cluster      Manage PiNet cluster nodes"
-      echo "  deploy       Deploy a smart contract"
-      echo "  network      View network interfaces and VPN status"
-      echo "  storage      View PiNet storage usage"
-      echo "  backup       Backup PiNet state and wallet"
-      echo "  version      Show PiNet OS version information"
-      echo "  help         Show this help message"
+      echo "Commands: open, install, status, start, stop, update, config, logs, cluster, deploy, network, storage, backup, version"
       ;;
   esac
 }
 
-# Mock raspi-config for demo purposes if it doesn't exist
-if ! command -v raspi-config &> /dev/null; then
-  raspi-config() {
-    echo -e "\\033[1;34mRaspberry Pi Software Configuration Tool (Mock)\\033[0m"
-    echo "1 System Options       Configure system settings"
-    echo "2 Display Options      Configure display settings"
-    echo "3 Interface Options    Configure connections to peripherals"
-    echo "4 Performance Options  Configure performance settings"
-    echo "5 Localisation Options Configure language and regional settings"
-    echo "6 Advanced Options     Configure advanced settings"
-    echo "8 Update               Update this tool to the latest version"
-    echo "9 About raspi-config   Information about this configuration tool"
-    echo ""
-    echo "Note: This is a mock interface for the PiNet OS demo."
-  }
-fi
-
-minima() {
-  echo -e "\\033[1;33mMinima Node CLI\\033[0m"
-  if [ "$1" = "status" ]; then
-    echo "Status: Running (Synced)"
-    echo "Block: 1,234,567"
-    echo "Connections: 12"
+# Mock uname for Trixie
+uname() {
+  if [ "$1" = "-a" ]; then
+    echo "Linux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64 GNU/Linux"
+  elif [ "$1" = "-r" ]; then
+    echo "6.6.20+rpt-rpi-v8"
+  elif [ "$1" = "-m" ]; then
+    echo "aarch64"
+  elif [ "$1" = "-v" ]; then
+    echo "#1 SMP PREEMPT Debian 13 (trixie)"
   else
-    echo "Node is running. Use 'pinet open minima-node' to view the GUI."
+    command uname "$@"
   fi
 }
 
-alias pinet-os='pinet'
+# Mock neofetch
+neofetch() {
+  echo -e "
+       \033[1;31m_,met\$\$\$\$gg.\033[0m          \033[1;32mpi\033[0m@\033[1;32mraspberrypi\033[0m
+    \033[1;31m,g\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$P.\033[0m       --------------
+  \033[1;31m,g\$\$P\"     \"\"\"Y\$\$.\".\033[0m        \033[1;31mOS\033[0m: Debian GNU/Linux 13 (trixie) aarch64
+ \033[1;31m,\$\$P'              \`\$\$\$.\033[0m     \033[1;31mHost\033[0m: Raspberry Pi 5 Model B Rev 1.0
+\033[1;31m',\$\$P       ,ggs.     \`\$\$b:\033[0m   \033[1;31mKernel\033[0m: 6.6.20+rpt-rpi-v8
+\033[1;31m\`d\$\$'     ,\$P\"'   .    \$\$\$\033[0m    \033[1;31mUptime\033[0m: 4 hours, 20 mins
+ \033[1;31m\$\$P      d\$'     ,    \$\$P\033[0m    \033[1;31mPackages\033[0m: 1452 (dpkg)
+ \033[1;31m\$\$:      \$\$.   -    ,d\$\$'\033[0m    \033[1;31mShell\033[0m: bash 5.2.21
+ \033[1;31m\$\$;      Y\$b._   _,d\$P'\033[0m      \033[1;31mResolution\033[0m: 1920x1080
+ \033[1;31mY\$\$.    \`.\`\"Y\$\$\$\$P\"'\033[0m         \033[1;31mDE\033[0m: PiNet-Web3
+ \033[1;31m\`\$\$b      \"-.__\033[0m              \033[1;31mTerminal\033[0m: pinet-term
+  \033[1;31m\`Y\$\$\033[0m                        \033[1;31mCPU\033[0m: Cortex-A76 (4) @ 2.400GHz
+   \033[1;31m\`Y\$\$.\033[0m                      \033[1;31mGPU\033[0m: Broadcom VideoCore VII
+     \033[1;31m\`\$\$b.\033[0m                    \033[1;31mMemory\033[0m: 1420MiB / 8096MiB
+       \033[1;31m\`Y\$\$b.\033[0m
+          \033[1;31m\`\"Y\$b._\033[0m
+              \033[1;31m\`\"\"\"\033[0m
+"
+}
 
-# Mock sudo to prevent permission denied errors in demo
+# Mock apt for Trixie
+apt() {
+  case "$1" in
+    update)
+      echo "Hit:1 http://deb.debian.org/debian trixie InRelease"
+      echo "Hit:2 http://deb.debian.org/debian trixie-updates InRelease"
+      echo "Hit:3 http://security.debian.org/debian-security trixie-security InRelease"
+      echo "Hit:4 http://archive.raspberrypi.com/debian trixie InRelease"
+      echo "Reading package lists... Done"
+      ;;
+    upgrade)
+      echo "Reading package lists... Done"
+      echo "Building dependency tree... Done"
+      echo "Reading state information... Done"
+      echo "Calculating upgrade... Done"
+      echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+      ;;
+    install)
+      if [ -z "$2" ]; then
+        echo "E: Command line option 'install' [from $2] is not understood"
+      else
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+        echo "$2 is already the newest version (1.2.3-1)."
+        echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+      fi
+      ;;
+    *)
+      command apt "$@"
+      ;;
+  esac
+}
+alias apt-get='apt'
+
+# Mock cat for system files
+cat() {
+  if [ "$1" = "/etc/os-release" ]; then
+    echo 'PRETTY_NAME="Debian GNU/Linux 13 (trixie)"'
+    echo 'NAME="Debian GNU/Linux"'
+    echo 'VERSION_ID="13"'
+    echo 'VERSION="13 (trixie)"'
+    echo 'ID=debian'
+    echo 'ID_LIKE=debian'
+    echo 'HOME_URL="https://www.debian.org/"'
+    echo 'SUPPORT_URL="https://www.debian.org/support"'
+    echo 'BUG_REPORT_URL="https://bugs.debian.org/"'
+  elif [ "$1" = "/etc/debian_version" ]; then
+    echo "13.0"
+  elif [ "$1" = "/etc/hostname" ]; then
+    echo "raspberrypi"
+  else
+    command cat "$@"
+  fi
+}
+
+# Mock whoami
+whoami() {
+  echo "pi"
+}
+
+# Mock sudo
 sudo() {
   if [ "$1" = "apt" ] || [ "$1" = "apt-get" ]; then
-    echo -e "\\033[1;33mReading package lists... Done\\033[0m"
-    echo "Building dependency tree... Done"
-    echo "Reading state information... Done"
-    if [ "$2" = "update" ]; then
-      echo "All packages are up to date."
-    elif [ "$2" = "install" ]; then
-      echo "Installing $3..."
-      sleep 1
-      echo "Setting up $3 (1.0.0)..."
-      echo "Done."
-    else
-      echo "Mock apt: command successful."
-    fi
+    apt "\${@:2}"
   else
-    # Just run the command without sudo
-    "$@"
+    "\$@"
   fi
 }
 
-if ! command -v vcgencmd &> /dev/null; then
-  vcgencmd() {
-    if [ "$1" = "measure_temp" ]; then
-      echo "temp=42.0'C"
-    elif [ "$1" = "get_mem" ]; then
-      if [ "$2" = "arm" ]; then echo "arm=948M"; else echo "gpu=76M"; fi
-    elif [ "$1" = "measure_volts" ]; then
-      echo "volt=1.2000V"
-    elif [ "$1" = "get_camera" ]; then
-      echo "supported=1 detected=1"
-    else
-      echo "VCHI initialization failed"
-    fi
-  }
-fi
+# Mock reboot
+reboot() {
+  echo -e "\\033[1;31mBroadcast message from root@raspberrypi (pts/0) ($(date '+%a %b %d %H:%M:%S %Y')):\\033[0m"
+  echo ""
+  echo "The system is going down for reboot NOW!"
+}
 
-if ! command -v pinout &> /dev/null; then
-  pinout() {
-    echo -e "\\033[1;32mRaspberry Pi 4 Model B Rev 1.4\\033[0m"
-    echo "   3V3  (1) (2)  5V    "
-    echo " GPIO2  (3) (4)  5V    "
-    echo " GPIO3  (5) (6)  GND   "
-    echo " GPIO4  (7) (8)  GPIO14"
-    echo "   GND  (9) (10) GPIO15"
-    echo " GPIO17 (11) (12) GPIO18"
-    echo " GPIO27 (13) (14) GND   "
-    echo " GPIO22 (15) (16) GPIO23"
-    echo "   3V3  (17) (18) GPIO24"
-    echo " GPIO10 (19) (20) GND   "
-    echo "  ... (Mock Pinout) ... "
-  }
-fi
+# Minima CLI
+minima() {
+  echo -e "\\033[1;33mMinima Node CLI v1.0.35\\033[0m"
+  case "$1" in
+    status)
+      echo "Status: Running (Synced)"
+      echo "Block: 1,245,091"
+      echo "Connections: 14"
+      echo "Memory Usage: 452MB"
+      ;;
+    peers)
+      echo "Connected Peers: 14"
+      echo "  [1] 192.168.1.10:9001 (Outbound)"
+      echo "  [2] 45.32.11.90:9001 (Inbound)"
+      echo "  ..."
+      ;;
+    *)
+      echo "Usage: minima [status|peers|info|help]"
+      ;;
+  esac
+}
 
-if ! command -v rpi-eeprom-update &> /dev/null; then
-  rpi-eeprom-update() {
-    echo "BOOTLOADER: up to date"
-    echo "   CURRENT: Tue 11 Jan 17:36:00 UTC 2024 (1641922560)"
-    echo "    LATEST: Tue 11 Jan 17:36:00 UTC 2024 (1641922560)"
-    echo "   RELEASE: default (/lib/firmware/raspberrypi/bootloader/default)"
-    echo "            Use raspi-config to change the release."
-  }
-fi
-`;
-            pty.stdin.write(pinetFunc.replace(/\n/g, '\r\n'));
+# Initial Welcome
+show_welcome "$mode"
+`
+              pty.stdin.write(mocks.replace(/\n/g, '\r\n'));
 
-            if (mode === 'raspbian') {
-              pty.stdin.write("export PS1='\\[\\e[32m\\]pi@raspberrypi\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
-            } else if (mode === 'ubuntu') {
-              pty.stdin.write("export PS1='\\[\\e[32m\\]user@ubuntu\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
-            } else if (mode === 'debian') {
-              pty.stdin.write("export PS1='\\[\\e[32m\\]user@debian\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
-            } else {
-              pty.stdin.write("export PS1='\\[\\e[35m\\]pinet@beta-node\\[\\e[0m\\]:\\[\\e[36m\\]\\w\\[\\e[0m\\]\\$ '\n");
-              pty.stdin.write("alias raspbian='echo \"Switching to Host OS context...\" && export OS_MODE=raspbian'\n");
-              pty.stdin.write("alias ubuntu='echo \"Switching to Host OS context...\" && export OS_MODE=ubuntu'\n");
-              pty.stdin.write("alias debian='echo \"Switching to Host OS context...\" && export OS_MODE=debian'\n");
-              pty.stdin.write("alias host-os='echo \"Switching to Host OS context...\" && export OS_MODE=raspbian'\n");
-            }
+              if (mode === 'raspbian' || mode === 'debian') {
+                pty.stdin.write("export PS1='\\[\\e[32m\\]pi@raspberrypi\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
+              } else if (mode === 'ubuntu') {
+                pty.stdin.write("export PS1='\\[\\e[32m\\]user@ubuntu\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
+              } else {
+                pty.stdin.write("export PS1='\\[\\e[35m\\]pinet@beta-node\\[\\e[0m\\]:\\[\\e[36m\\]\\w\\[\\e[0m\\]\\$ '\n");
+              }
+            }, 500);
           }
           pty.stdin.write(msg.data);
         }
@@ -344,10 +359,10 @@ fi
       } catch (e) { console.warn("Disk info failed"); }
 
       res.json({
-        cpu: cpuUsage * 100,
-        ram: memPercent,
-        temp: temp,
-        disk: diskUsage
+        cpu: (cpuUsage || 0) * 100,
+        ram: memPercent || 0,
+        temp: temp || 0,
+        disk: diskUsage || 0
       });
     } catch (error) {
       console.error("Error fetching system stats:", error);
@@ -427,6 +442,179 @@ fi
       // If installed on a known host OS, default to that context. Otherwise PiNet context.
       defaultContext: (isRaspbian || isUbuntu || isDebian) ? osName : 'pinet'
     });
+  });
+
+  // --- Real File System Endpoints ---
+  app.use(express.json());
+
+  app.get("/api/files/list", (req, res) => {
+    const dirPath = (req.query.path as string) || process.cwd();
+    try {
+      const absolutePath = path.resolve(dirPath);
+      // Security check: stay within process.cwd() or allow home? 
+      // For this OS simulation, we allow browsing but be careful.
+      const files = fs.readdirSync(absolutePath, { withFileTypes: true });
+      const result = files.map(f => {
+        const stats = fs.statSync(path.join(absolutePath, f.name));
+        return {
+          name: f.name,
+          type: f.isDirectory() ? 'dir' : 'file',
+          size: stats.size,
+          modified: stats.mtimeMs,
+          permissions: 'rw-r--r--' // Mocked for now
+        };
+      });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/files/read", (req, res) => {
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "Path required" });
+    try {
+      const content = fs.readFileSync(path.resolve(filePath), 'utf8');
+      res.json({ content });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/files/write", (req, res) => {
+    const { path: filePath, content } = req.body;
+    if (!filePath) return res.status(400).json({ error: "Path required" });
+    try {
+      fs.writeFileSync(path.resolve(filePath), content, 'utf8');
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/files/delete", (req, res) => {
+    const filePath = req.query.path as string;
+    if (!filePath) return res.status(400).json({ error: "Path required" });
+    try {
+      const absolutePath = path.resolve(filePath);
+      if (fs.statSync(absolutePath).isDirectory()) {
+        fs.rmdirSync(absolutePath, { recursive: true });
+      } else {
+        fs.unlinkSync(absolutePath);
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Real Minima Node Persistence ---
+  const STATE_FILE = path.join(process.cwd(), 'pinet-state.json');
+  let pinetState = {
+    minima: {
+      balance: 1250.45,
+      blockHeight: 1245091,
+      status: 'Synced',
+      peers: 14,
+      transactions: [
+        { id: 1, type: 'Received', amount: '+42.50 MIN', date: '2024-05-20', status: 'Confirmed' },
+        { id: 2, type: 'Sent', amount: '-10.00 MIN', date: '2024-05-18', status: 'Confirmed' },
+        { id: 3, type: 'Staking Reward', amount: '+0.15 MIN', date: '2024-05-17', status: 'Confirmed' },
+      ]
+    },
+    cluster: [
+      { 
+        id: 'n1', 
+        name: 'Pi-Alpha (Local Host)', 
+        ip: '127.0.0.1', 
+        hat: 'SSD_NVME', 
+        status: 'online', 
+        metrics: { cpu: 12, ram: 2.1, temp: 45, iops: 12500 } 
+      }
+    ],
+    settings: {
+      wallpaper: 'carbon',
+      nodeAlias: 'Pi-Alpha-Node',
+      torEnabled: false
+    }
+  };
+
+  if (fs.existsSync(STATE_FILE)) {
+    try {
+      pinetState = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    } catch (e) { console.error("Failed to load state file"); }
+  }
+
+  const saveState = () => {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(pinetState, null, 2));
+  };
+
+  // Simulate block production on server
+  setInterval(() => {
+    pinetState.minima.blockHeight++;
+    saveState();
+  }, 10000);
+
+  app.get("/api/settings", (req, res) => {
+    res.json(pinetState.settings);
+  });
+
+  app.post("/api/settings", (req, res) => {
+    pinetState.settings = { ...pinetState.settings, ...req.body };
+    saveState();
+    res.json({ success: true });
+  });
+
+  app.get("/api/minima/status", (req, res) => {
+    res.json(pinetState.minima);
+  });
+
+  app.post("/api/minima/cmd", (req, res) => {
+    const { command } = req.body;
+    // Real logic for some commands
+    if (command === "status") {
+      res.json({ status: true, response: pinetState.minima });
+    } else if (command.startsWith("send")) {
+      // send to:xxx amount:yyy
+      const amountMatch = command.match(/amount:([\d.]+)/);
+      const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+      if (amount > 0 && amount <= pinetState.minima.balance) {
+        pinetState.minima.balance -= amount;
+        pinetState.minima.transactions.unshift({
+          id: Date.now(),
+          type: 'Sent',
+          amount: `-${amount.toFixed(2)} MIN`,
+          date: new Date().toISOString().split('T')[0],
+          status: 'Confirmed'
+        });
+        saveState();
+        res.json({ status: true, response: { message: "Transaction sent" } });
+      } else {
+        res.json({ status: false, error: "Insufficient balance" });
+      }
+    } else {
+      res.json({ status: true, response: { message: "Command executed" } });
+    }
+  });
+
+  app.get("/api/cluster/nodes", (req, res) => {
+    res.json(pinetState.cluster);
+  });
+
+  app.post("/api/cluster/provision", (req, res) => {
+    const { id } = req.body;
+    const node = pinetState.cluster.find(n => n.id === id);
+    if (node) {
+      node.status = 'provisioning';
+      saveState();
+      setTimeout(() => {
+        node.status = 'online';
+        saveState();
+      }, 5000);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "Node not found" });
+    }
   });
 
   app.get("/api/download-pinetos", (req, res) => {

@@ -5,30 +5,24 @@ type Listener = () => void;
 
 class ClusterServiceImpl {
   private listeners: Listener[] = [];
-  private _nodes: ClusterNode[] = [
-    { 
-        id: 'n1', 
-        name: 'Pi-Alpha (Local Host)', 
-        ip: '127.0.0.1', 
-        hat: 'SSD_NVME', 
-        status: 'online', 
-        metrics: { cpu: 12, ram: 2.1, temp: 45, iops: 12500 } 
-    }
-  ];
+  private _nodes: ClusterNode[] = [];
 
   constructor() {
-    // Simulate metrics fluctuation
-    setInterval(() => {
-        this._nodes = this._nodes.map(node => ({
-            ...node,
-            metrics: {
-                ...node.metrics,
-                cpu: Math.max(5, Math.min(100, node.metrics.cpu + (Math.random() * 10 - 5))),
-                temp: Math.max(30, Math.min(80, node.metrics.temp + (Math.random() * 4 - 2))),
-            }
-        }));
+    // Poll for real updates from backend
+    this.fetchUpdates();
+    setInterval(() => this.fetchUpdates(), 5000);
+  }
+
+  private async fetchUpdates() {
+    try {
+      const response = await fetch('/api/cluster/nodes');
+      if (response.ok) {
+        this._nodes = await response.json();
         this.emit();
-    }, 2000);
+      }
+    } catch (e) {
+      console.error("Failed to fetch cluster updates:", e);
+    }
   }
 
   subscribe(listener: Listener) {
@@ -40,28 +34,17 @@ class ClusterServiceImpl {
 
   get nodes() { return this._nodes; }
 
-  addNode(node: ClusterNode) {
-      if (!this._nodes.find(n => n.id === node.id)) {
-          this._nodes.push(node);
-          this.emit();
-      }
-  }
-
-  setNodes(nodes: ClusterNode[]) {
-      this._nodes = nodes;
-      this.emit();
-  }
-
-  provisionNode(id: string) {
-      const node = this._nodes.find(n => n.id === id);
-      if (node) {
-          node.status = 'provisioning';
-          this.emit();
-          setTimeout(() => {
-              node.status = 'online';
-              this.emit();
-          }, 5000);
-      }
+  async provisionNode(id: string) {
+    try {
+      await fetch('/api/cluster/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      this.fetchUpdates();
+    } catch (e) {
+      console.error("Failed to provision node:", e);
+    }
   }
 }
 

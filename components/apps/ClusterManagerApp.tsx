@@ -17,19 +17,7 @@ const ClusterManagerApp: React.FC<ClusterManagerAppProps> = ({ nodes }) => {
 
   const toggleBroadcast = () => {
     setIsBroadcasting(!isBroadcasting);
-    if (!isBroadcasting) {
-        // Simulate finding nodes after a delay if in broadcast mode
-        setTimeout(() => {
-            clusterService.addNode({ 
-                id: 'n2', 
-                name: 'Pi-Beta (AI Hub)', 
-                ip: '192.168.1.11', 
-                hat: 'AI_NPU', 
-                status: 'awaiting-os', 
-                metrics: { cpu: 2, ram: 0.5, temp: 35, npu: 0 } 
-            });
-        }, 3000);
-    }
+    // Real discovery logic would happen on the backend
   };
 
   return (

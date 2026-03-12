@@ -49,9 +49,16 @@ class ShellService {
             { 
               name: 'os-release', 
               type: 'file', 
-              content: `PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"\nNAME="Debian GNU/Linux"\nVERSION_CODENAME=bookworm\nID=debian\nHOME_URL="https://www.debian.org/"\nSUPPORT_URL="https://www.debian.org/support"\nBUG_REPORT_URL="https://bugs.debian.org/"`, 
+              content: `PRETTY_NAME="Debian GNU/Linux 13 (trixie)"\nNAME="Debian GNU/Linux"\nVERSION_ID="13"\nVERSION="13 (trixie)"\nID=debian\nID_LIKE=debian\nHOME_URL="https://www.debian.org/"\nSUPPORT_URL="https://www.debian.org/support"\nBUG_REPORT_URL="https://bugs.debian.org/"`, 
               modified: Date.now(), 
               permissions: '-rw-r--r--' 
+            },
+            {
+              name: 'debian_version',
+              type: 'file',
+              content: '13.0',
+              modified: Date.now(),
+              permissions: '-rw-r--r--'
             },
             {
                 name: 'hostname',
@@ -372,7 +379,7 @@ class ShellService {
 
       case 'uname':
         if (args[0] === '-a') {
-          output.push({ text: 'Linux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 12 (bookworm) aarch64 GNU/Linux', type: 'info' });
+          output.push({ text: 'Linux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64 GNU/Linux', type: 'info' });
         } else if (args[0] === '-r') {
            output.push({ text: '6.6.20+rpt-rpi-v8', type: 'info' });
         } else {
@@ -382,23 +389,23 @@ class ShellService {
 
       case 'neofetch':
           output.push({ text: `
-       _,met$$$$$gg.          pi@raspberrypi
-    ,g$$$$$$$$$$$$$$$P.       --------------
-  ,g$$P"     """Y$$.".        OS: Debian GNU/Linux 12 (bookworm) aarch64
- ,$$P'              \`$$$.     Host: Raspberry Pi 5 Model B Rev 1.0
-',$$P       ,ggs.     \`$$b:   Kernel: 6.6.20+rpt-rpi-v8
-\`d$$'     ,$P"'   .    $$$    Uptime: 2 hours, 14 mins
- $$P      d$'     ,    $$P    Packages: 1402 (dpkg)
- $$:      $$.   -    ,d$$'    Shell: bash 5.2.15
- $$;      Y$b._   _,d$P'      Resolution: 1920x1080
- Y$$.    \`.\`"Y$$$$P"'         DE: PiNet-Web3
- \`$$b      "-.__              Terminal: pinet-term
-  \`Y$$                        CPU: Cortex-A76 (4) @ 2.400GHz
-   \`Y$$.                      GPU: Broadcom VideoCore VII
-     \`$$b.                    Memory: 1224MiB / 8096MiB
-       \`Y$$b.
-          \`"Y$b._
-              \`"""
+       \x1b[1;31m_,met$$$$$gg.\x1b[0m          \x1b[1;32mpi\x1b[0m@\x1b[1;32mraspberrypi\x1b[0m
+    \x1b[1;31m,g$$$$$$$$$$$$$$$P.\x1b[0m       --------------
+  \x1b[1;31m,g$$P"     """Y$$.".\x1b[0m        \x1b[1;31mOS\x1b[0m: Debian GNU/Linux 13 (trixie) aarch64
+ \x1b[1;31m,$$P'              \`$$$.\x1b[0m     \x1b[1;31mHost\x1b[0m: Raspberry Pi 5 Model B Rev 1.0
+\x1b[1;31m',$$P       ,ggs.     \`$$b:\x1b[0m   \x1b[1;31mKernel\x1b[0m: 6.6.20+rpt-rpi-v8
+\x1b[1;31m\`d$$'     ,$P"'   .    $$$\x1b[0m    \x1b[1;31mUptime\x1b[0m: 4 hours, 20 mins
+ \x1b[1;31m$$P      d$'     ,    $$P\x1b[0m    \x1b[1;31mPackages\x1b[0m: 1452 (dpkg)
+ \x1b[1;31m$$:      $$.   -    ,d$$'\x1b[0m    \x1b[1;31mShell\x1b[0m: bash 5.2.21
+ \x1b[1;31m$$;      Y$b._   _,d$P'\x1b[0m      \x1b[1;31mResolution\x1b[0m: 1920x1080
+ \x1b[1;31mY$$.    \`.\`"Y$$$$P"' \x1b[0m        \x1b[1;31mDE\x1b[0m: PiNet-Web3
+ \x1b[1;31m\`$$b      "-.__\x1b[0m              \x1b[1;31mTerminal\x1b[0m: pinet-term
+  \x1b[1;31m\`Y$$\x1b[0m                        \x1b[1;31mCPU\x1b[0m: Cortex-A76 (4) @ 2.400GHz
+   \x1b[1;31m\`Y$$.\x1b[0m                      \x1b[1;31mGPU\x1b[0m: Broadcom VideoCore VII
+     \x1b[1;31m\`$$b.\x1b[0m                    \x1b[1;31mMemory\x1b[0m: 1420MiB / 8096MiB
+       \x1b[1;31m\`Y$$b.\x1b[0m
+          \x1b[1;31m\`"Y$b._\x1b[0m
+              \x1b[1;31m\`"""\x1b[0m
 `, type: 'success' });
         break;
 
@@ -406,10 +413,10 @@ class ShellService {
       case 'apt-get':
         if (args[0] === 'update') {
             output.push(
-                { text: 'Hit:1 http://deb.debian.org/debian bookworm InRelease', type: 'info' },
-                { text: 'Hit:2 http://deb.debian.org/debian bookworm-updates InRelease', type: 'info' },
-                { text: 'Hit:3 http://security.debian.org/debian-security bookworm-security InRelease', type: 'info' },
-                { text: 'Hit:4 http://archive.raspberrypi.com/debian bookworm InRelease', type: 'info' },
+                { text: 'Hit:1 http://deb.debian.org/debian trixie InRelease', type: 'info' },
+                { text: 'Hit:2 http://deb.debian.org/debian trixie-updates InRelease', type: 'info' },
+                { text: 'Hit:3 http://security.debian.org/debian-security trixie-security InRelease', type: 'info' },
+                { text: 'Hit:4 http://archive.raspberrypi.com/debian trixie InRelease', type: 'info' },
                 { text: 'Reading package lists... Done', type: 'info' }
             );
         } else if (args[0] === 'upgrade') {
@@ -417,6 +424,7 @@ class ShellService {
                 { text: 'Reading package lists... Done', type: 'info' },
                 { text: 'Building dependency tree... Done', type: 'info' },
                 { text: 'Reading state information... Done', type: 'info' },
+                { text: 'Calculating upgrade... Done', type: 'info' },
                 { text: '0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.', type: 'info' }
             );
         } else if (args[0] === 'install') {
@@ -426,7 +434,8 @@ class ShellService {
                 output.push(
                     { text: `Reading package lists... Done`, type: 'info' },
                     { text: `Building dependency tree... Done`, type: 'info' },
-                    { text: `${args[1]} is already the newest version.`, type: 'info' },
+                    { text: `Reading state information... Done`, type: 'info' },
+                    { text: `${args[1]} is already the newest version (1.2.3-1).`, type: 'info' },
                     { text: '0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.', type: 'info' }
                 );
             }

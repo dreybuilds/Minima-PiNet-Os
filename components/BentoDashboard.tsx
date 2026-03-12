@@ -9,6 +9,8 @@ interface BentoDashboardProps {
 }
 
 const BentoDashboard: React.FC<BentoDashboardProps> = ({ systemStats, nodeStats }) => {
+  if (!systemStats) return null;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-4 gap-4 w-full h-full max-w-6xl mx-auto opacity-40 pointer-events-none select-none">
       {/* CPU Card */}
@@ -19,12 +21,12 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ systemStats, nodeStats 
       >
         <div>
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">CPU Load</h3>
-          <div className="text-4xl font-black text-white">{systemStats.cpu.toFixed(1)}%</div>
+          <div className="text-4xl font-black text-white">{(systemStats.cpu ?? 0).toFixed(1)}%</div>
         </div>
         <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
           <motion.div 
             className="h-full bg-pink-500" 
-            animate={{ width: `${systemStats.cpu}%` }}
+            animate={{ width: `${systemStats.cpu ?? 0}%` }}
           />
         </div>
       </motion.div>
@@ -37,7 +39,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ systemStats, nodeStats 
         className="md:col-span-1 md:row-span-1 glass-dark p-6 rounded-3xl flex flex-col justify-between"
       >
         <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest">Memory</h3>
-        <div className="text-2xl font-bold text-emerald-400">{systemStats.ram.toFixed(1)}%</div>
+        <div className="text-2xl font-bold text-emerald-400">{(systemStats.ram ?? 0).toFixed(1)}%</div>
       </motion.div>
 
       {/* Temp Card */}
@@ -48,7 +50,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ systemStats, nodeStats 
         className="md:col-span-1 md:row-span-1 glass-dark p-6 rounded-3xl flex flex-col justify-between"
       >
         <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest">Temp</h3>
-        <div className="text-2xl font-bold text-amber-400">{systemStats.temp.toFixed(1)}°C</div>
+        <div className="text-2xl font-bold text-amber-400">{(systemStats.temp ?? 0).toFixed(1)}°C</div>
       </motion.div>
 
       {/* Node Status */}

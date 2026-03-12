@@ -12,30 +12,20 @@ const FileExplorerApp: React.FC = () => {
   }, [currentPath]);
 
   const updateView = async () => {
-      if (window.electron) {
-        try {
-          const files = await window.electron.readDir(currentPath);
-          if (Array.isArray(files)) {
-            setNodes(files.map((f: any) => ({
-              name: f.name,
-              type: f.isDirectory ? 'dir' : 'file',
-              content: '',
-              permissions: 'rwxr-xr-x',
-              owner: 'pinet',
-              size: 0,
-              modified: Date.now()
-            })));
-            return;
-          }
-        } catch (e) {
-          console.error('Failed to read dir', e);
+      try {
+        const response = await fetch(`/api/files/list?path=${encodeURIComponent(currentPath)}`);
+        if (!response.ok) throw new Error('Failed to fetch files');
+        const files = await response.json();
+        setNodes(files);
+      } catch (e) {
+        console.error('Failed to read dir', e);
+        // Fallback to shell simulation if server fails
+        const dir = shell.resolvePath(currentPath);
+        if (dir && dir.children) {
+            setNodes(dir.children);
+        } else {
+            setNodes([]);
         }
-      }
-      const dir = shell.resolvePath(currentPath);
-      if (dir && dir.children) {
-          setNodes(dir.children);
-      } else {
-          setNodes([]);
       }
   };
 

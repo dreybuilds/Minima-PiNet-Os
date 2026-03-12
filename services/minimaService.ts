@@ -7,11 +7,7 @@ class MinimaServiceImpl {
   private listeners: Listener[] = [];
   private _balance = 1250.45;
   private _blockHeight = 1245091;
-  private _transactions: any[] = [
-      { id: 1, type: 'Received', amount: '+42.50 MIN', date: '2024-05-20', status: 'Confirmed' },
-      { id: 2, type: 'Sent', amount: '-10.00 MIN', date: '2024-05-18', status: 'Confirmed' },
-      { id: 3, type: 'Staking Reward', amount: '+0.15 MIN', date: '2024-05-17', status: 'Confirmed' },
-  ];
+  private _transactions: any[] = [];
   private _stats: NodeStats = {
     blockHeight: 1245091,
     peers: 14,
@@ -21,12 +17,30 @@ class MinimaServiceImpl {
   };
 
   constructor() {
-    // Simulate block production
-    setInterval(() => {
-        this._blockHeight++;
-        this._stats.blockHeight = this._blockHeight;
+    // Poll for real updates from backend
+    this.fetchUpdates();
+    setInterval(() => this.fetchUpdates(), 5000);
+  }
+
+  private async fetchUpdates() {
+    try {
+      const response = await fetch('/api/minima/status');
+      if (response.ok) {
+        const data = await response.json();
+        this._balance = data.balance;
+        this._blockHeight = data.blockHeight;
+        this._transactions = data.transactions;
+        this._stats = {
+          ...this._stats,
+          blockHeight: data.blockHeight,
+          peers: data.peers,
+          status: data.status
+        };
         this.emit();
-    }, 6000);
+      }
+    } catch (e) {
+      console.error("Failed to fetch minima updates:", e);
+    }
   }
 
   subscribe(listener: Listener) {
@@ -40,48 +54,46 @@ class MinimaServiceImpl {
   get transactions() { return this._transactions; }
   get stats() { return this._stats; }
 
-  burn(amount: number, description: string) {
-    this._balance = Math.max(0, this._balance - amount);
-    // Only add transaction log occasionally to avoid spamming the list in UI during streaming
-    if (Math.random() > 0.95) {
-        this._transactions.unshift({
-            id: Date.now(),
-            type: 'M.402 Burn',
-            amount: `-${amount.toFixed(4)} MIN`,
-            date: 'Just now',
-            status: description
-        });
-    }
-    this.emit();
-  }
-
-  send(to: string, amount: number) {
-      if (amount > this._balance) return false;
-      this._balance -= amount;
-      this._transactions.unshift({
-          id: Date.now(),
-          type: 'Sent',
-          amount: `-${amount.toFixed(2)} MIN`,
-          date: 'Just now',
-          status: 'Pending'
+  async burn(amount: number, description: string) {
+    try {
+      await fetch('/api/minima/cmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: `burn amount:${amount} desc:${description}` })
       });
-      this.emit();
-      return true;
+      this.fetchUpdates();
+    } catch (e) {
+      console.error("Failed to burn:", e);
+    }
   }
 
-  // Legacy static methods adapted to use instance if needed, or kept for compatibility
+  async send(to: string, amount: number) {
+    try {
+      const response = await fetch('/api/minima/cmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: `send to:${to} amount:${amount}` })
+      });
+      const result = await response.json();
+      this.fetchUpdates();
+      return result.status;
+    } catch (e) {
+      console.error("Failed to send:", e);
+      return false;
+    }
+  }
+
   async cmd(command: string): Promise<any> {
-    console.log(`[Minima Cluster CMD]: ${command}`);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (command === "status") {
-          resolve({ status: true, response: { version: "1.0.35", network: "mainnet", block: this._blockHeight } });
-        } else if (command.startsWith("m402")) {
-          resolve({ status: true, response: { contract: "0xM402_AGENT_PAY", state: "STREAMING" } });
-        }
-        resolve({ status: true, response: {} });
-      }, 100);
-    });
+    try {
+      const response = await fetch('/api/minima/cmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+      return await response.json();
+    } catch (e) {
+      return { status: false, error: e };
+    }
   }
 
   async initiateM402Stream(rate: number): Promise<string> {

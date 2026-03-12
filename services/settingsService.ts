@@ -12,14 +12,17 @@ class SettingsServiceImpl {
   }
 
   private async init() {
-    if (window.electron) {
-      const w = await window.electron.storeGet('wallpaper');
-      if (w) this._wallpaper = w;
-      const a = await window.electron.storeGet('nodeAlias');
-      if (a) this._nodeAlias = a;
-      const t = await window.electron.storeGet('torEnabled');
-      if (t !== undefined) this._torEnabled = t;
-      this.emit();
+    try {
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const data = await response.json();
+        this._wallpaper = data.wallpaper;
+        this._nodeAlias = data.nodeAlias;
+        this._torEnabled = data.torEnabled;
+        this.emit();
+      }
+    } catch (e) {
+      console.error("Failed to fetch settings:", e);
     }
   }
 
@@ -31,24 +34,42 @@ class SettingsServiceImpl {
   private emit() { this.listeners.forEach(l => l()); }
 
   get wallpaper() { return this._wallpaper; }
-  setWallpaper(w: string) { 
+  async setWallpaper(w: string) { 
     this._wallpaper = w; 
-    if (window.electron) window.electron.storeSet('wallpaper', w);
     this.emit(); 
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallpaper: w })
+      });
+    } catch (e) { console.error("Failed to save wallpaper:", e); }
   }
 
   get nodeAlias() { return this._nodeAlias; }
-  setNodeAlias(a: string) { 
+  async setNodeAlias(a: string) { 
     this._nodeAlias = a; 
-    if (window.electron) window.electron.storeSet('nodeAlias', a);
     this.emit(); 
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeAlias: a })
+      });
+    } catch (e) { console.error("Failed to save alias:", e); }
   }
 
   get torEnabled() { return this._torEnabled; }
-  setTorEnabled(e: boolean) { 
+  async setTorEnabled(e: boolean) { 
     this._torEnabled = e; 
-    if (window.electron) window.electron.storeSet('torEnabled', e);
     this.emit(); 
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ torEnabled: e })
+      });
+    } catch (e) { console.error("Failed to save tor setting:", e); }
   }
 }
 

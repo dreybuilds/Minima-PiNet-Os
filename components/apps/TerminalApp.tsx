@@ -38,8 +38,7 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
 
     socket.onopen = () => {
       if (xtermRef.current) {
-        xtermRef.current.write('\x1b[1;32mConnected to host shell.\x1b[0m\r\n');
-        socket.send(JSON.stringify({ type: 'input', data: `export OS_MODE=${osMode}\nclear\n` }));
+        socket.send(JSON.stringify({ type: 'input', data: `export OS_MODE=${osMode}\n` }));
       }
     };
 
@@ -47,10 +46,18 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'output' && xtermRef.current) {
+          // Handle PINET_CMD:OPEN: commands
           if (msg.data.includes('PINET_CMD:OPEN:')) {
-            const match = msg.data.match(/PINET_CMD:OPEN:([a-zA-Z0-9-]+)/);
-            if (match && match[1] && onOpenApp) {
-              onOpenApp(match[1]);
+            const lines = msg.data.split(/[\r\n]+/);
+            for (const line of lines) {
+              if (line.includes('PINET_CMD:OPEN:')) {
+                const match = line.match(/PINET_CMD:OPEN:([a-zA-Z0-9-]+)/);
+                if (match && match[1] && onOpenApp) {
+                  onOpenApp(match[1]);
+                }
+              } else if (line.trim()) {
+                xtermRef.current.write(line + '\r\n');
+              }
             }
           } else {
             xtermRef.current.write(msg.data);
