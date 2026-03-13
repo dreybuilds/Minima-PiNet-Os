@@ -1,12 +1,13 @@
 [Unit]
 Description=PiNet Distributed Storage (IPFS)
-After=network-online.target
+After=network.target
 
 [Service]
 Type=simple
-User=pinet
-ExecStart=/usr/local/bin/ipfs daemon --init
+User=pi
+ExecStart=/usr/local/bin/ipfs daemon
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

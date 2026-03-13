@@ -1,7 +1,7 @@
 # Security Policy for Minima-PiNet-Os
 
 **Document Classification:** PUBLIC / SECURITY POLICY  
-**Applies To:** Minima-PiNet-Os Core, Edge Node Infrastructure, PiNet Neural Framework
+**Applies To:** Minima-PiNet-Os Core, Edge Node Infrastructure, PiNet Neural Framework, PiNet Cluster Manager, k3s Edge Compute, IPFS Storage, MiniDAPP Runtime
 
 This document outlines the security policies, vulnerability reporting procedures, and the zero-trust threat model governing the Minima-PiNet-Os stack.
 
@@ -37,10 +37,13 @@ Minima-PiNet-Os is engineered under a **Zero-Trust** paradigm. When auditing or 
 
 ### In-Scope Security Controls
 *   **Cryptographic Authentication:** SSH is strictly limited to `ed25519` key-based authentication. Password authentication and legacy algorithms (RSA/ECDSA) are disabled by default.
-*   **Network Perimeter:** UFW (Uncomplicated Firewall) is configured to default-deny all ingress traffic. Only ports `22` (SSH), `9001` (Minima P2P), and `9002` (Minima RPC) are exposed.
+*   **Network Perimeter:** UFW (Uncomplicated Firewall) is configured to default-deny all ingress traffic. Only ports `22` (SSH), `9001` (Minima P2P), `9002` (Minima RPC), `51820` (WireGuard), and `6443` (k3s API) are exposed.
+*   **Cluster Mesh Networking:** All inter-node communication is encrypted via WireGuard tunnels managed by the PiNet Cluster Manager.
+*   **Container Isolation:** k3s workloads are isolated using strict AppArmor profiles and rootless container execution where possible.
+*   **MiniDAPP Sandboxing:** Decentralized applications run in a restricted runtime environment with limited access to the host filesystem and network.
 *   **Brute-Force Mitigation:** `fail2ban` is actively monitoring auth logs and will permanently drop IPs (`bantime = -1`) attempting SSH brute-force attacks.
 *   **Privilege Escalation:** The default `pi` user is locked, expired, and removed from the `sudo` group.
-*   **Data at Rest:** Root and data partitions are encrypted via LUKS.
+*   **Data at Rest:** Root and data partitions are encrypted via LUKS. IPFS storage is anchored to the Minima blockchain for integrity verification.
 *   **Boot Integrity:** Secure Boot and Measured Boot (via TPM 2.0 PCR sealing) ensure the chain of trust from the Boot ROM to the OS kernel.
 
 ### Out of Scope

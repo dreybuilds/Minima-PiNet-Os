@@ -1,10 +1,10 @@
 # PiNetOS Security Model
 
 ## Device Identity
-Each node generates a unique Ed25519 keypair on first boot. The public key serves as the Node ID.
+Each Raspberry Pi generates a unique cryptographic identity upon first boot. If a TPM (Trusted Platform Module) is available, keys are stored securely in hardware.
 
 ## Secure Node Registration
-Nodes register to the cluster by submitting a Minima transaction containing their Node ID and WireGuard public key.
+Nodes joining the PiNet cluster must authenticate using public key cryptography. The cluster manager verifies the node's identity before issuing a WireGuard configuration.
 
 ## Encrypted Networking
-All cluster traffic is encrypted using WireGuard. The Cluster Manager automatically configures WireGuard peers based on the blockchain registry.
+All internal cluster communication is routed through a WireGuard mesh VPN, ensuring end-to-end encryption and preventing eavesdropping on the local network.

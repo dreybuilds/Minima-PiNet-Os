@@ -1,0 +1,1 @@
+Please refer to `docs/architecture.md` and `docs/os-architecture.md` for detailed architectural information.

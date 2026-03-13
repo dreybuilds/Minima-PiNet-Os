@@ -1,11 +1,11 @@
 [Unit]
-Description=PiNet Edge Compute Runtime (k3s)
-After=network.target
+Description=PiNet Cluster Manager
+After=network.target minima.service
 
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/local/bin/k3s server
+ExecStart=/opt/pinet/cluster-manager
 Restart=always
 RestartSec=10
 

@@ -1,26 +1,31 @@
 #!/bin/bash
 set -e
 
-TARGET_DIR="rootfs"
-DISTRO="bookworm"
-ARCH="arm64"
+echo "Building PiNetOS Root Filesystem..."
 
-echo "Building rootfs for $DISTRO ($ARCH)..."
-sudo debootstrap --arch=$ARCH $DISTRO $TARGET_DIR http://deb.debian.org/debian/
+ROOTFS_DIR="rootfs"
+mkdir -p $ROOTFS_DIR
 
-echo "Installing required packages..."
-sudo chroot $TARGET_DIR apt-get update
-sudo chroot $TARGET_DIR apt-get install -y openjdk-17-jre-headless docker.io containerd git curl net-tools wireguard
+# Run debootstrap
+sudo debootstrap --arch=arm64 bookworm $ROOTFS_DIR http://deb.debian.org/debian/
 
-echo "Installing k3s..."
-sudo chroot $TARGET_DIR curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_ENABLE=true sh -
+# Chroot and install packages
+sudo chroot $ROOTFS_DIR /bin/bash -c "
+  apt-get update
+  apt-get install -y openjdk-17-jre-headless docker.io containerd git curl net-tools wireguard
+  
+  # Install k3s
+  curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_ENABLE=true sh -
+  
+  # Install IPFS
+  wget https://dist.ipfs.tech/kubo/v0.28.0/kubo_v0.28.0_linux-arm64.tar.gz
+  tar -xvzf kubo_v0.28.0_linux-arm64.tar.gz
+  cd kubo
+  bash install.sh
+"
 
-echo "Installing IPFS..."
-sudo chroot $TARGET_DIR wget https://dist.ipfs.tech/kubo/v0.27.0/kubo_v0.27.0_linux-arm64.tar.gz
-sudo chroot $TARGET_DIR tar -xvzf kubo_v0.27.0_linux-arm64.tar.gz
-sudo chroot $TARGET_DIR bash -c "cd kubo && ./install.sh"
+# Create PiNet directories
+sudo mkdir -p $ROOTFS_DIR/pinet/services
+sudo mkdir -p $ROOTFS_DIR/pinet/dapps
 
-echo "Creating PiNet directories..."
-sudo chroot $TARGET_DIR mkdir -p /pinet/services /pinet/dapps /opt/minima
-
-echo "Rootfs build complete."
+echo "Root filesystem built successfully."

@@ -1,12 +1,11 @@
 [Unit]
 Description=Minima Blockchain Node
-After=network-online.target
-Wants=network-online.target
+After=network.target
 
 [Service]
 Type=simple
-User=pinet
-ExecStart=/usr/bin/java -jar /opt/minima/minima.jar -daemon -rpcenable -mdsenable
+User=pi
+ExecStart=/usr/bin/java -jar /opt/minima/minima.jar
 Restart=always
 RestartSec=10
 StandardOutput=journal

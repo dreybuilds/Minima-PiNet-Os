@@ -41,9 +41,30 @@ The system operates on a **Tripartite Synergy**, balancing performance, intellig
 
 | Architectural Pillar | Description | Implementation Details |
 | :--- | :--- | :--- |
-| **Minimalist OS Footprint** | Absolute resource conservation. | Headless-only, systemd-optimized, stripped kernel modules, ephemeral logging. |
+| **Minimalist OS Footprint** | Absolute resource conservation. | Headless-only, systemd-optimized, Debian Bookworm ARM64 base, stripped kernel modules. |
 | **Advanced PiNet ML** | Hardware-accelerated neural processing. | Pre-configured bindings for TensorFlow Lite, ONNX, and custom PiNet solvers. |
-| **Zero-Trust Cybersecurity** | Cryptographically verified execution. | Default-deny firewall, SSH key-only auth, immutable rootfs overlays, and TPM 2.0 readiness. |
+| **Zero-Trust Cybersecurity** | Cryptographically verified execution. | Default-deny firewall, WireGuard mesh, SSH key-only auth, immutable rootfs overlays, and TPM 2.0 readiness. |
+| **Enterprise Edge Compute** | Lightweight container orchestration. | Integrated **k3s** for deploying AI workloads, IoT services, and containerized apps. |
+| **Decentralized Storage** | Distributed file system integration. | Native **IPFS** support with blockchain anchoring and node replication. |
+| **Web3 & Blockchain** | Layer 1 decentralized protocol. | Embedded **Minima** blockchain node and **MiniDAPP** runtime environment. |
+
+---
+
+## PiNetOS Enterprise Architecture
+
+The latest release introduces the **PiNetOS Enterprise Stack**, transforming the Raspberry Pi into a full-fledged decentralized edge node. The system stack is layered as follows:
+
+1. **Hardware:** Raspberry Pi 4 / 5
+2. **Bootloader & Kernel:** Secure Boot, Linux Kernel (ARM64)
+3. **Init System:** systemd
+4. **PiNet Services:** Cluster Manager (libp2p, WireGuard), Edge Compute (k3s), Distributed Storage (IPFS)
+5. **Blockchain Layer:** Minima Node (`/opt/minima`)
+6. **Application Layer:** MiniDAPP Runtime (`/pinet/dapps/`)
+
+### Key Enterprise Features
+* **PiNet Cluster Manager:** Handles node discovery, mesh networking, blockchain node registration, and workload scheduling.
+* **MiniDAPP Platform:** Includes built-in decentralized applications such as a Wallet, IoT Data Market, and Device Identity manager.
+* **Automated Build System:** A complete suite of scripts (`build-rootfs.sh`, `build-kernel.sh`, `build-image.sh`) to generate bootable `PiNetOS.img` artifacts from scratch using `debootstrap`.
 
 ---
 
@@ -65,8 +86,19 @@ Tailored specifically for modern ARM-based microcomputers running headless envir
 
 This guide is designed for both beginners taking their first steps into headless provisioning, and senior DevOps engineers requiring low-level CLI control.
 
-### 1. Securely Flashing the OS
-Download the latest `Minima-PiNet-Os.img` and flash it to your target media using `dd`. 
+### Automated Enterprise Installer (Recommended)
+
+For a fully automated setup of the entire PiNetOS Enterprise stack (including k3s, IPFS, and Minima), use the master installer script:
+
+```bash
+git clone https://github.com/WilliamMajanja/Minima-PiNet-Os.git
+cd Minima-PiNet-Os/scripts
+sudo ./install-pinet.sh
+```
+This script will build the OS, configure the node, enable all systemd services, and start the blockchain node.
+
+### 1. Securely Flashing the OS (Manual)
+Download the latest `PiNetOS.img` (or build it via `/build-system/build-image.sh`) and flash it to your target media using `dd`. 
 *(Note: Replace `/dev/sdX` with your actual target drive. **Double-check the drive letter to avoid data loss.**)*
 
 ```bash

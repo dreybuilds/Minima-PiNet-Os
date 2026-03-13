@@ -150,6 +150,43 @@ class ShellService {
                       permissions: '-rw-r--r--'
                     },
                     {
+                      name: 'SECURITY.md',
+                      type: 'file',
+                      content: '# Security Policy for Minima-PiNet-Os\n\n**Document Classification:** PUBLIC / SECURITY POLICY\n\nThis document outlines the security policies, vulnerability reporting procedures, and the zero-trust threat model governing the Minima-PiNet-Os stack.',
+                      modified: Date.now(),
+                      permissions: '-rw-r--r--'
+                    },
+                    {
+                      name: 'scripts',
+                      type: 'dir',
+                      modified: Date.now(),
+                      permissions: 'drwxr-xr-x',
+                      children: [
+                        {
+                          name: 'os_node_patch.sh',
+                          type: 'file',
+                          content: '#!/bin/bash\n# Minima-PiNet-Os Node Patch Script\n# Applies ZRAM, Kernel Tuning, Docker Pinning, and Zero-Trust Hardening\n\necho "Starting PiNetOS Node Hardening..."\necho "Applying ZRAM configuration..."\necho "Tuning Kernel parameters..."\necho "Pinning Docker version..."\necho "Configuring UFW and Fail2Ban..."\necho "Hardening complete!"',
+                          modified: Date.now(),
+                          permissions: '-rwxr-xr-x'
+                        }
+                      ]
+                    },
+                    {
+                      name: 'docs',
+                      type: 'dir',
+                      modified: Date.now(),
+                      permissions: 'drwxr-xr-x',
+                      children: [
+                        {
+                          name: 'TROUBLESHOOTING.md',
+                          type: 'file',
+                          content: '# Troubleshooting & Patch Protocol\n\nThis document covers:\n1. Storage and Crash Mitigation\n2. Syncing Loops and Docker Versioning\n3. Network Reliability\n4. Zero-Trust Security Hardening',
+                          modified: Date.now(),
+                          permissions: '-rw-r--r--'
+                        }
+                      ]
+                    },
+                    {
                       name: 'docker',
                       type: 'dir',
                       modified: Date.now(),

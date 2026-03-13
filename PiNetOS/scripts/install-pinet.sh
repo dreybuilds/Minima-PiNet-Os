@@ -1,22 +1,23 @@
 #!/bin/bash
 set -e
-echo "Starting PiNetOS Master Installer..."
 
-# 1. Build OS (Simulated)
-./build-system/build-rootfs.sh
+echo "Installing PiNetOS components..."
 
-# 2. Configure Node
-echo "Configuring Node Identity..."
-# Generate keys...
+# Build OS
+bash ../build-system/build-rootfs.sh
+bash ../build-system/build-kernel.sh
+bash ../build-system/build-image.sh
 
-# 3. Enable Services
-echo "Enabling PiNet Services..."
-systemctl enable pinet-edge-runtime
-systemctl enable pinet-storage
-systemctl enable pinet-node-agent
+# Configure node
+echo "Configuring node..."
 
-# 4. Start Blockchain Node
-./scripts/install-minima.sh
-systemctl start minima
+# Enable services
+sudo systemctl enable minima.service
+sudo systemctl enable pinet-cluster-manager.service
+sudo systemctl enable pinet-edge-runtime.service
+sudo systemctl enable pinet-storage.service
 
-echo "PiNetOS Installation Complete!"
+# Start blockchain node
+sudo systemctl start minima.service
+
+echo "PiNetOS installation complete."
