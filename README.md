@@ -1,86 +1,153 @@
-# PiNetOS Enterprise
+# Minima-PiNet-Os
 
-**Secure Edge Operating System for Raspberry Pi**
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Architecture](https://img.shields.io/badge/arch-ARM64-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.0--alpha-orange)
+![Security](https://img.shields.io/badge/security-Zero--Trust-red)
 
-PiNetOS is a hardened, appliance-grade Linux OS purpose-built for Raspberry Pi devices, combining secure boot, encrypted storage, signed OTA updates, kiosk UX, wallet-grade key handling, and fleet management into a turnkey system.
+> **An ultra-minimalist, physics-informed neural network (PiNet) operating system tailored for edge computing, bio-informatics, and non-scedastic data analysis.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%205-red.svg) ![Security](https://img.shields.io/badge/security-hardened-green.svg)
+## Executive Summary
 
-## 🏗 System Architecture
-
-```mermaid
-graph TD
-    A[Boot ROM] --> B[Signed U-Boot FIT]
-    B --> C[Measured Linux Kernel]
-    C --> D["Encrypted RootFS (LUKS)"]
-    D --> E[systemd]
-    E --> F["Kiosk Shell (GPU Accelerated)"]
-    F --> G[PiNetOS UI / Wallet]
-```
-
-## 🔐 Security Features
-
-| Feature | Status | Description |
-| :--- | :--- | :--- |
-| **Secure Boot** | ✅ | U-Boot FIT signing via hardware root of trust |
-| **Measured Boot** | ✅ | TPM 2.0 PCR sealing for chain of trust |
-| **Disk Encryption** | ✅ | Full LUKS encryption for root & data partitions |
-| **Signed OTA** | ✅ | Cryptographically verified updates (A/B partition) |
-| **Rollback** | ✅ | Atomic automatic rollback on update failure |
-| **Kiosk Lockdown** | ✅ | No TTY escape, USB HID whitelist, No local shell |
-
-## 🛠 Build Instructions
-
-**Requirements:** Raspberry Pi OS (Bookworm 64-bit), Docker, 30GB Disk.
-
-```bash
-# 1. Install Dependencies
-sudo apt update
-sudo apt install -y git curl rsync xz-utils parted qemu-user-static \
-debootstrap zerofree genisoimage squashfs-tools cryptsetup \
-docker.io openssl tpm2-tools chromium-browser network-manager
-
-# 2. Clone Generator
-git clone https://github.com/RaspberryPiFoundation/raspi-image-gen
-chmod +x build.sh install.sh
-
-# 3. Build Signed Image
-sudo ./build.sh
-```
-
-**Artifact:** `output/PiNetOS.img`
-
-## 📦 Directory Structure
-
-```text
-PiNetOS/
-├── build.sh                 # Main build orchestrator
-├── images/pinetos/          # OS Configuration
-│   ├── config               # Distro variables
-│   ├── stage0/              # Secure Boot (U-Boot)
-│   ├── stage1/              # LUKS Encryption
-│   ├── stage2/              # GPU Desktop Stack
-│   ├── stage3/              # Kiosk Lockdown
-│   ├── stage4/              # Wallet Subsystem
-└── tools/                   # Utilities (Signer, Flasher)
-```
-
-## 🧠 Virtual Product Design (VPD)
-
-### Problem Statement
-Raspberry Pi devices are increasingly used for kiosks, financial terminals, and edge compute, but standard OS distros lack enterprise-grade security. PiNetOS solves this by delivering a hardened, appliance-grade Linux OS.
-
-### User Goals
-1.  **Deploy Securely:** Prevent tampering via Secure Boot & TPM.
-2.  **Reliable Updates:** A/B OTA with automatic rollback.
-3.  **Fleet Management:** Remote wipe, reboot, and monitoring.
-4.  **Web3 Ready:** Hardware-backed wallet key storage.
-
-### Success Metrics
-*   **Boot Time:** < 6 seconds (Pi 5)
-*   **OTA Failure:** < 0.1%
-*   **Recovery:** > 99% Success Rate
+**Minima-PiNet-Os** is a specialized, headless Linux distribution engineered for ARM64 microcomputers. It strips away the bloat of traditional operating systems to provide a mathematically optimized, zero-trust environment. Designed from the ground up to support advanced machine learning workloads at the edge, this OS serves as a foundational substrate for researchers, DevOps engineers, and data scientists operating in highly complex, multidimensional computational spaces.
 
 ---
 
-*Built for the Decentralized Edge.*
+## The Architect
+
+This system was conceptualized and architected by **William Majanja**—an Open Source Bio-Informaticist, Data Segmentation Specialist, Non-Scedastic Analyst, Sound Engineer, and Cybersecurity Professional. As a recognized practitioner in the Tech Industrial Complex, Majanja's multidisciplinary expertise bridges the gap between biological systems, acoustic engineering, and hardened distributed computing. **Minima-PiNet-Os** is the direct manifestation of this cross-domain philosophy.
+
+---
+
+## Theoretical Framework
+
+### The "Minima" Paradigm
+At its core, this OS adheres strictly to a **zero-bloat philosophy**. Users are provided with a bare-bones base installation, strictly advising the addition of only mission-critical packages to conserve compute, memory, and thermal resources. 
+
+Conceptually and mathematically, the *Minima* environment is optimized to navigate complex multidimensional spaces—such as **morphospace** or **transcriptional space**. By eliminating background noise and OS-level stochasticity, the system ensures that optimization algorithms and gradient descent paths avoid getting trapped in *local minima*, allowing for true global optimization in computational biology and data segmentation tasks.
+
+### The "PiNet" Framework
+Traditional data-driven learning models often struggle with edge-case generalization. **PiNet** (Physics-Informed Neural Networks) integration fundamentally alters this dynamic. The OS natively supports and accelerates PiNet architectures, which improve upon standard empirical learning by actively incorporating:
+*   **Physical Laws:** Constraining neural network outputs to obey known differential equations.
+*   **Heuristic Strategies:** Embedding domain-specific rules to guide the learning phase.
+*   **Empirical Observations & Expert Knowledge:** Fusing raw data streams with established scientific priors.
+
+---
+
+## Core Architecture
+
+The system operates on a **Tripartite Synergy**, balancing performance, intelligence, and security:
+
+| Architectural Pillar | Description | Implementation Details |
+| :--- | :--- | :--- |
+| **Minimalist OS Footprint** | Absolute resource conservation. | Headless-only, systemd-optimized, stripped kernel modules, ephemeral logging. |
+| **Advanced PiNet ML** | Hardware-accelerated neural processing. | Pre-configured bindings for TensorFlow Lite, ONNX, and custom PiNet solvers. |
+| **Zero-Trust Cybersecurity** | Cryptographically verified execution. | Default-deny firewall, SSH key-only auth, immutable rootfs overlays, and TPM 2.0 readiness. |
+
+---
+
+## Hardware Requirements
+
+Tailored specifically for modern ARM-based microcomputers running headless environments.
+
+| Component | Minimum Specification | Recommended Specification |
+| :--- | :--- | :--- |
+| **Platform** | Raspberry Pi 4 Model B (4GB) | Raspberry Pi 5 (8GB) |
+| **Architecture** | ARM64 (aarch64) | ARM64 (aarch64) |
+| **Storage** | 16GB High-Endurance MicroSD | 64GB NVMe SSD (via PCIe HAT) |
+| **Network** | Gigabit Ethernet | Gigabit Ethernet + WireGuard Mesh |
+| **Peripherals** | None (Headless) | None (Headless) |
+
+---
+
+## Installation & Provisioning
+
+This guide is designed for both beginners taking their first steps into headless provisioning, and senior DevOps engineers requiring low-level CLI control.
+
+### 1. Securely Flashing the OS
+Download the latest `Minima-PiNet-Os.img` and flash it to your target media using `dd`. 
+*(Note: Replace `/dev/sdX` with your actual target drive. **Double-check the drive letter to avoid data loss.**)*
+
+```bash
+# Unmount the drive if auto-mounted
+sudo umount /dev/sdX*
+
+# Flash the image with block size optimization and sync
+sudo dd if=Minima-PiNet-Os.img of=/dev/sdX bs=4M status=progress
+sudo sync
+```
+
+### 2. Headless Injection (Networking & SSH)
+Before booting the Raspberry Pi, you must inject your SSH keys and network configuration directly into the `boot` partition to maintain the zero-trust posture.
+
+```bash
+# Mount the boot partition
+sudo mkdir -p /mnt/pinet-boot
+sudo mount /dev/sdX1 /mnt/pinet-boot
+
+# Enable SSH daemon on first boot
+sudo touch /mnt/pinet-boot/ssh
+
+# Inject initial user credentials (Username: minima)
+# Generate a hashed password using: echo 'mypassword' | openssl passwd -6 -stdin
+echo "minima:\$6\$YOUR_HASHED_PASSWORD_HERE" | sudo tee /mnt/pinet-boot/userconf.txt
+
+# (Optional) Inject Wi-Fi configuration if not using Ethernet
+cat <<EOF | sudo tee /mnt/pinet-boot/wpa_supplicant.conf
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=US
+
+network={
+    ssid="YOUR_SSID"
+    psk="YOUR_WIFI_PASSWORD"
+    key_mgmt=WPA-PSK
+}
+EOF
+
+# Unmount safely
+sudo umount /mnt/pinet-boot
+```
+
+### 3. Initial Access
+Insert the media into the Raspberry Pi, connect to your network, and power it on.
+
+```bash
+# Connect via SSH using the injected credentials
+ssh minima@<raspberry-pi-ip>
+```
+
+---
+
+## Use Cases
+
+**Minima-PiNet-Os** is purpose-built for highly specialized computational domains:
+
+*   🧬 **Bio-Informatics & Morphospace Mapping:** 
+    Provides a stable, jitter-free environment for running complex genomic sequencing and evolutionary morphology simulations. The PiNet framework ensures biological constraints are mathematically enforced during data modeling.
+*   📊 **Non-Scedastic Data Visualization:** 
+    Optimized for processing datasets with varying variance (heteroscedasticity). The minimal OS overhead allows for real-time, high-throughput statistical rendering without kernel-level interruptions.
+*   🌐 **Decentralized Edge Computing:** 
+    Acts as a secure, lightweight node in a distributed mesh network. Ideal for deploying containerized AI workloads directly to the edge, processing IoT sensor data locally before transmitting aggregated insights.
+
+---
+
+## Contribution Guidelines
+
+We welcome contributions from AI researchers, systems engineers, and open-source enthusiasts. 
+
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/advanced-pinet-solver`).
+3. Commit your changes (`git commit -m 'Add new PiNet heuristic solver'`).
+4. Push to the branch (`git push origin feature/advanced-pinet-solver`).
+5. Open a Pull Request detailing the mathematical and architectural implications of your code.
+
+Please ensure all code adheres to the zero-bloat philosophy. Submissions introducing unnecessary dependencies will be rejected.
+
+## License
+
+This project is licensed under the **MIT License**. See the `LICENSE` file for details. 
+
+---
+*Designed for the future of edge intelligence. Architected by William Majanja.*
