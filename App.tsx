@@ -5,7 +5,7 @@ import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
 import TopBar from './components/TopBar';
 import BootSplashScreen from './components/apps/BootSplashScreen';
-import { AppId, WindowState, NodeStats, SystemStats, ClusterNode } from './types';
+import { AppId, WindowState, NodeStats, SystemStats, ClusterNode, OSMode } from './types';
 import MinimaNodeApp from './components/apps/MinimaNodeApp';
 import SystemMonitorApp from './components/apps/SystemMonitorApp';
 import TerminalApp from './components/apps/TerminalApp';
@@ -23,7 +23,6 @@ import { clusterService } from './services/clusterService';
 import { settingsService } from './services/settingsService';
 import { systemService } from './services/systemService';
 
-type OSMode = 'pinet' | 'raspbian' | 'ubuntu' | 'debian';
 type TransitionState = 'idle' | 'shutting-down' | 'booting';
 
 interface WindowContainerProps {
@@ -164,8 +163,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const url = `${window.location.origin}/api/system-stats`;
-        const res = await fetch(url);
+        const res = await fetch('/api/system-stats');
         if (res.ok) {
           const data = await res.json();
           setSysStats(data);
@@ -219,7 +217,9 @@ const App: React.FC = () => {
       }
   };
 
-  const toggleOS = async () => {
+  const switchOS = async (target: OSMode) => {
+    if (currentOS === target) return;
+
     // 1. Initiate Shutdown Sequence
     setTransitionState('shutting-down');
     await new Promise(r => setTimeout(r, 1000));
@@ -228,11 +228,9 @@ const App: React.FC = () => {
     setTransitionState('booting');
     setBootLog([
       "ACPI: Initiating Hypervisor Context Switch",
-      "XEN: Suspending DomU [PiNet_Web3_OS]",
+      "XEN: Suspending DomU [" + (currentOS === 'pinet' ? 'PiNet_Web3_OS' : 'Host_OS') + "]",
       "VMM: Saving CPU State to NVMe Region 0x8000...",
     ]);
-
-    const target = currentOS === 'pinet' ? (osInfo?.osName || 'raspbian') : 'pinet';
     
     // Animate loglines
     const hostOSName = osInfo?.osName === 'raspbian' ? 'Debian 13 (Trixie) Pixel Desktop' : 
@@ -262,6 +260,11 @@ const App: React.FC = () => {
     setBootLog([]);
     setRaspMenuOpen(false);
     if (target !== 'pinet') setRaspTermOpen(true);
+  };
+
+  const toggleOS = () => {
+    const target = currentOS === 'pinet' ? (osInfo?.osName || 'raspbian') as OSMode : 'pinet';
+    switchOS(target);
   };
 
   // Raspbian Drag Logic
@@ -452,7 +455,7 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     <div className="p-0 flex-1 overflow-hidden">
-                        <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} />
+                        <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} onGuiSwitch={() => switchOS((osInfo?.osName || 'raspbian') as OSMode)} />
                     </div>
                 </div>
             )}
@@ -534,7 +537,7 @@ const App: React.FC = () => {
               >
                 {win.id === 'minima-node' && <MinimaNodeApp stats={nodeStats} />}
                 {win.id === 'system-monitor' && <SystemMonitorApp stats={sysStats} />}
-                {win.id === 'terminal' && <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} />}
+                {win.id === 'terminal' && <TerminalApp osMode={currentOS} onOpenApp={(appId) => openApp(appId as AppId)} onGuiSwitch={() => switchOS((osInfo?.osName || 'raspbian') as OSMode)} />}
                 {win.id === 'ai-assistant' && (
                   <AiAssistantApp 
                     context={{ 

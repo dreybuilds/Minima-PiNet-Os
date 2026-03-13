@@ -28,6 +28,8 @@ export interface SystemStats {
 
 export type HatType = 'AI_NPU' | 'SENSE' | 'SSD_NVME' | 'NONE';
 
+export type OSMode = 'pinet' | 'raspbian' | 'ubuntu' | 'debian';
+
 export interface ClusterNode {
   id: string;
   name: string;

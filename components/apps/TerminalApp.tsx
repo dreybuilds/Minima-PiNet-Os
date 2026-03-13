@@ -7,9 +7,10 @@ import { motion } from 'motion/react';
 interface TerminalAppProps {
   osMode?: 'pinet' | 'raspbian' | 'ubuntu' | 'debian';
   onOpenApp?: (appId: string) => void;
+  onGuiSwitch?: () => void;
 }
 
-const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }) => {
+const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp, onGuiSwitch }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -46,14 +47,18 @@ const TerminalApp: React.FC<TerminalAppProps> = ({ osMode = 'pinet', onOpenApp }
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'output' && xtermRef.current) {
-          // Handle PINET_CMD:OPEN: commands
-          if (msg.data.includes('PINET_CMD:OPEN:')) {
+          // Handle PINET_CMD: commands
+          if (msg.data.includes('PINET_CMD:')) {
             const lines = msg.data.split(/[\r\n]+/);
             for (const line of lines) {
               if (line.includes('PINET_CMD:OPEN:')) {
                 const match = line.match(/PINET_CMD:OPEN:([a-zA-Z0-9-]+)/);
                 if (match && match[1] && onOpenApp) {
                   onOpenApp(match[1]);
+                }
+              } else if (line.includes('PINET_CMD:GUI_SWITCH')) {
+                if (onGuiSwitch) {
+                  onGuiSwitch();
                 }
               } else if (line.trim()) {
                 xtermRef.current.write(line + '\r\n');

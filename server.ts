@@ -163,23 +163,23 @@ uname() {
 # Mock neofetch
 neofetch() {
   echo -e "
-       \033[1;31m_,met\$\$\$\$gg.\033[0m          \033[1;32mpi\033[0m@\033[1;32mraspberrypi\033[0m
-    \033[1;31m,g\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$P.\033[0m       --------------
-  \033[1;31m,g\$\$P\"     \"\"\"Y\$\$.\".\033[0m        \033[1;31mOS\033[0m: Debian GNU/Linux 13 (trixie) aarch64
- \033[1;31m,\$\$P'              \`\$\$\$.\033[0m     \033[1;31mHost\033[0m: Raspberry Pi 5 Model B Rev 1.0
-\033[1;31m',\$\$P       ,ggs.     \`\$\$b:\033[0m   \033[1;31mKernel\033[0m: 6.6.20+rpt-rpi-v8
-\033[1;31m\`d\$\$'     ,\$P\"'   .    \$\$\$\033[0m    \033[1;31mUptime\033[0m: 4 hours, 20 mins
- \033[1;31m\$\$P      d\$'     ,    \$\$P\033[0m    \033[1;31mPackages\033[0m: 1452 (dpkg)
- \033[1;31m\$\$:      \$\$.   -    ,d\$\$'\033[0m    \033[1;31mShell\033[0m: bash 5.2.21
- \033[1;31m\$\$;      Y\$b._   _,d\$P'\033[0m      \033[1;31mResolution\033[0m: 1920x1080
- \033[1;31mY\$\$.    \`.\`\"Y\$\$\$\$P\"'\033[0m         \033[1;31mDE\033[0m: PiNet-Web3
- \033[1;31m\`\$\$b      \"-.__\033[0m              \033[1;31mTerminal\033[0m: pinet-term
-  \033[1;31m\`Y\$\$\033[0m                        \033[1;31mCPU\033[0m: Cortex-A76 (4) @ 2.400GHz
-   \033[1;31m\`Y\$\$.\033[0m                      \033[1;31mGPU\033[0m: Broadcom VideoCore VII
-     \033[1;31m\`\$\$b.\033[0m                    \033[1;31mMemory\033[0m: 1420MiB / 8096MiB
-       \033[1;31m\`Y\$\$b.\033[0m
-          \033[1;31m\`\"Y\$b._\033[0m
-              \033[1;31m\`\"\"\"\033[0m
+       \\033[1;31m_,met\$\$\$\$gg.\\033[0m          \\033[1;32mpi\\033[0m@\\033[1;32mraspberrypi\\033[0m
+    \\033[1;31m,g\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$P.\\033[0m       --------------
+  \\033[1;31m,g\$\$P\"     \"\"\"Y\$\$.\".\\033[0m        \\033[1;31mOS\\033[0m: Debian GNU/Linux 13 (trixie) aarch64
+ \\033[1;31m,\$\$P'              \`\$\$\$.\\033[0m     \\033[1;31mHost\\033[0m: Raspberry Pi 5 Model B Rev 1.0
+\\033[1;31m',\$\$P       ,ggs.     \`\$\$b:\\033[0m   \\033[1;31mKernel\\033[0m: 6.6.20+rpt-rpi-v8
+\\033[1;31m\`d\$\$'     ,\$P\"'   .    \$\$\$\\033[0m    \\033[1;31mUptime\\033[0m: 4 hours, 20 mins
+ \\033[1;31m\$\$P      d\$'     ,    \$\$P\\033[0m    \\033[1;31mPackages\\033[0m: 1452 (dpkg)
+ \\033[1;31m\$\$:      \$\$.   -    ,d\$\$'\\033[0m    \\033[1;31mShell\\033[0m: bash 5.2.21
+ \\033[1;31m\$\$;      Y\$b._   _,d\$P'\\033[0m      \\033[1;31mResolution\\033[0m: 1920x1080
+ \\033[1;31mY\$\$.    \`.\`\"Y\$\$\$\$P\"'\\033[0m         \\033[1;31mDE\\033[0m: PiNet-Web3
+ \\033[1;31m\`\$\$b      \"-.__\\033[0m              \\033[1;31mTerminal\\033[0m: pinet-term
+  \\033[1;31m\`Y\$\$\\033[0m                        \\033[1;31mCPU\\033[0m: Cortex-A76 (4) @ 2.400GHz
+   \\033[1;31m\`Y\$\$.\\033[0m                      \\033[1;31mGPU\\033[0m: Broadcom VideoCore VII
+     \\033[1;31m\`\$\$b.\\033[0m                    \\033[1;31mMemory\\033[0m: 1420MiB / 8096MiB
+       \\033[1;31m\`Y\$\$b.\\033[0m
+          \\033[1;31m\`\"Y\$b._\\033[0m
+              \\033[1;31m\`\"\"\"\\033[0m
 "
 }
 
@@ -259,6 +259,13 @@ reboot() {
   echo ""
   echo "The system is going down for reboot NOW!"
 }
+
+# Mock startx / kex
+startx() {
+  echo "Starting Graphical User Interface..."
+  echo "PINET_CMD:GUI_SWITCH"
+}
+alias kex='startx'
 
 # Minima CLI
 minima() {
@@ -509,7 +516,7 @@ show_welcome "$mode"
   });
 
   // --- Real Minima Node Persistence ---
-  const STATE_FILE = path.join(process.cwd(), 'pinet-state.json');
+  const STATE_FILE = '/tmp/pinet-state.json';
   let pinetState = {
     minima: {
       balance: 1250.45,

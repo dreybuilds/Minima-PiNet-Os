@@ -1,5 +1,5 @@
 
-import { ClusterNode, HatType } from '../types';
+import { ClusterNode, HatType, OSMode } from '../types';
 
 export const systemService = {
   async scanSubnet(subnet: string, onProgress: (log: string) => void, maxRetries: number = 0): Promise<ClusterNode[]> {
@@ -66,7 +66,7 @@ export const systemService = {
     return found;
   },
 
-  async executeHypervisorSwitch(targetOS: 'pinet' | 'raspbian'): Promise<void> {
+  async executeHypervisorSwitch(targetOS: OSMode): Promise<void> {
     // This mocks the low-level hypervisor call (e.g., Xen Dom0 command, kexec, or u-boot environment update + reboot)
     console.log(`[HV] Context Switch Initiated -> Target: ${targetOS}`);
     return new Promise(resolve => setTimeout(resolve, 5000));
