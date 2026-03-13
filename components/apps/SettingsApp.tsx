@@ -8,6 +8,7 @@ const SettingsApp: React.FC = () => {
   const [p2pEnabled, setP2pEnabled] = useState(true);
   const [torEnabled, setTorEnabled] = useState(settingsService.torEnabled);
   const [wallpaper, setWallpaper] = useState(settingsService.wallpaper);
+  const [osInfo, setOsInfo] = useState<any>(null);
 
   useEffect(() => {
     const unsub = settingsService.subscribe(() => {
@@ -15,6 +16,12 @@ const SettingsApp: React.FC = () => {
         setNodeAlias(settingsService.nodeAlias);
         setTorEnabled(settingsService.torEnabled);
     });
+    
+    fetch('/api/os-info')
+      .then(res => res.json())
+      .then(data => setOsInfo(data))
+      .catch(err => console.error("Failed to load OS info", err));
+      
     return unsub;
   }, []);
 
@@ -40,6 +47,7 @@ const SettingsApp: React.FC = () => {
         <NavButton active={activeTab === 'network'} onClick={() => setActiveTab('network')} icon={<NetworkIcon />} label="Network" />
         <NavButton active={activeTab === 'display'} onClick={() => setActiveTab('display')} icon={<DisplayIcon />} label="Display" />
         <NavButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<SecurityIcon />} label="Security" />
+        <NavButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<ServicesIcon />} label="Services" />
       </div>
 
       <div className="flex-1 p-8 overflow-y-auto">
@@ -124,6 +132,31 @@ const SettingsApp: React.FC = () => {
                 </Section>
              </div>
         )}
+
+        {activeTab === 'services' && (
+             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <Section title="PiNet Core Services">
+                     <Toggle label="Minima Blockchain Node" checked={true} />
+                     <Toggle label="k3s Edge Compute (Container Runtime)" checked={true} />
+                     <Toggle label="IPFS Distributed Storage" checked={true} />
+                     <Toggle label="WireGuard Mesh Networking" checked={true} />
+                </Section>
+                <Section title="System Information">
+                     <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                         <div className="text-xs font-bold text-white mb-2">OS Version</div>
+                         <div className="text-[10px] text-slate-400 font-mono">
+                           {osInfo ? `PiNet OS v2.5.0-LTS (${osInfo.osName} ${osInfo.architecture})` : 'PiNet OS v2.5.0-LTS (Debian Bookworm ARM64)'}
+                         </div>
+                         {osInfo?.hardwareModel && (
+                           <>
+                             <div className="text-xs font-bold text-white mb-2 mt-4">Hardware</div>
+                             <div className="text-[10px] text-slate-400 font-mono">{osInfo.hardwareModel}</div>
+                           </>
+                         )}
+                     </div>
+                </Section>
+             </div>
+        )}
       </div>
     </div>
   );
@@ -178,5 +211,6 @@ const SystemIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentCol
 const NetworkIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>;
 const DisplayIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>;
 const SecurityIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>;
+const ServicesIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>;
 
 export default SettingsApp;

@@ -75,28 +75,32 @@ async function startServer() {
             // Inject the pinet function and other mocks with a small delay to ensure shell is ready
             setTimeout(() => {
               const mocks = `
-# PiNet OS & Debian Trixie Simulation Layer
+# PiNet OS Simulation Layer
 export HOME=/home/pi
 mkdir -p /home/pi/projects
 mkdir -p /var/minima
 mkdir -p /etc/pinet
 touch /home/pi/README.txt
-echo "Welcome to PiNet OS Trixie Edition" > /home/pi/README.txt
+echo "Welcome to PiNet OS" > /home/pi/README.txt
 touch /var/minima/chain.db
 touch /var/minima/wallet.db
 touch /etc/pinet/config.json
 cd /home/pi
 
+# Ensure strict pathing
+export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 # Welcome Message Function
 show_welcome() {
   local mode=$1
-  echo -e "\\033[0;37mLinux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64\\033[0m"
+  local os_name=$(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)
+  echo -e "\\033[0;37m$(uname -a)\\033[0m"
   echo ""
-  echo "The programs included with the Debian GNU/Linux system are free software;"
+  echo "The programs included with the $os_name system are free software;"
   echo "the exact distribution terms for each program are described in the"
   echo "individual files in /usr/share/doc/*/copyright."
   echo ""
-  echo "Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent"
+  echo "$os_name comes with ABSOLUTELY NO WARRANTY, to the extent"
   echo "permitted by applicable law."
   echo -e "Last login: $(date '+%a %b %d %H:%M:%S %Y') from 192.168.1.50"
   echo ""
@@ -131,9 +135,9 @@ pinet() {
       ${pinetState.cluster.map(n => `echo "  ${n.id.padEnd(4)} ${n.name.padEnd(7)} ${n.hat.padEnd(9)} ${n.status.toUpperCase()}"`).join('\n      ')}
       ;;
     version|info)
-      echo -e "\\033[1;35mPiNet OS v2.5.0-LTS (Trixie Base)\\033[0m"
-      echo "Architecture: aarch64"
-      echo "Kernel: 6.6.20+rpt-rpi-v8"
+      echo -e "\\033[1;35mPiNet OS v2.5.0-LTS\\033[0m"
+      echo "Architecture: $(uname -m)"
+      echo "Kernel: $(uname -r)"
       echo "Minima Node: v1.0.35"
       ;;
     help|*)
@@ -145,117 +149,42 @@ pinet() {
   esac
 }
 
-# Mock uname for Trixie
-uname() {
-  if [ "$1" = "-a" ]; then
-    echo "Linux raspberrypi 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 13 (trixie) aarch64 GNU/Linux"
-  elif [ "$1" = "-r" ]; then
-    echo "6.6.20+rpt-rpi-v8"
-  elif [ "$1" = "-m" ]; then
-    echo "aarch64"
-  elif [ "$1" = "-v" ]; then
-    echo "#1 SMP PREEMPT Debian 13 (trixie)"
-  else
-    command uname "$@"
-  fi
-}
-
-# Mock neofetch
+# Mock neofetch to use real host info
 neofetch() {
+  local os_name=$(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)
+  local kernel=$(uname -r)
+  local arch=$(uname -m)
+  local host=$(hostname)
+  local user=$(whoami)
   echo -e "
-       \\033[1;31m_,met\$\$\$\$gg.\\033[0m          \\033[1;32mpi\\033[0m@\\033[1;32mraspberrypi\\033[0m
+       \\033[1;31m_,met\$\$\$\$gg.\\033[0m          \\033[1;32m$user\\033[0m@\\033[1;32m$host\\033[0m
     \\033[1;31m,g\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$P.\\033[0m       --------------
-  \\033[1;31m,g\$\$P\"     \"\"\"Y\$\$.\".\\033[0m        \\033[1;31mOS\\033[0m: Debian GNU/Linux 13 (trixie) aarch64
- \\033[1;31m,\$\$P'              \`\$\$\$.\\033[0m     \\033[1;31mHost\\033[0m: Raspberry Pi 5 Model B Rev 1.0
-\\033[1;31m',\$\$P       ,ggs.     \`\$\$b:\\033[0m   \\033[1;31mKernel\\033[0m: 6.6.20+rpt-rpi-v8
-\\033[1;31m\`d\$\$'     ,\$P\"'   .    \$\$\$\\033[0m    \\033[1;31mUptime\\033[0m: 4 hours, 20 mins
- \\033[1;31m\$\$P      d\$'     ,    \$\$P\\033[0m    \\033[1;31mPackages\\033[0m: 1452 (dpkg)
- \\033[1;31m\$\$:      \$\$.   -    ,d\$\$'\\033[0m    \\033[1;31mShell\\033[0m: bash 5.2.21
+  \\033[1;31m,g\$\$P\"     \"\"\"Y\$\$.\".\\033[0m        \\033[1;31mOS\\033[0m: $os_name $arch
+ \\033[1;31m,\$\$P'              \`\$\$\$.\\033[0m     \\033[1;31mHost\\033[0m: PiNet Node
+\\033[1;31m',\$\$P       ,ggs.     \`\$\$b:\\033[0m   \\033[1;31mKernel\\033[0m: $kernel
+\\033[1;31m\`d\$\$'     ,\$P\"'   .    \$\$\$\\033[0m    \\033[1;31mUptime\\033[0m: $(uptime -p)
+ \\033[1;31m\$\$P      d\$'     ,    \$\$P\\033[0m    \\033[1;31mPackages\\033[0m: $(dpkg -l | grep -c ^ii) (dpkg)
+ \\033[1;31m\$\$:      \$\$.   -    ,d\$\$'\\033[0m    \\033[1;31mShell\\033[0m: $SHELL
  \\033[1;31m\$\$;      Y\$b._   _,d\$P'\\033[0m      \\033[1;31mResolution\\033[0m: 1920x1080
  \\033[1;31mY\$\$.    \`.\`\"Y\$\$\$\$P\"'\\033[0m         \\033[1;31mDE\\033[0m: PiNet-Web3
  \\033[1;31m\`\$\$b      \"-.__\\033[0m              \\033[1;31mTerminal\\033[0m: pinet-term
-  \\033[1;31m\`Y\$\$\\033[0m                        \\033[1;31mCPU\\033[0m: Cortex-A76 (4) @ 2.400GHz
-   \\033[1;31m\`Y\$\$.\\033[0m                      \\033[1;31mGPU\\033[0m: Broadcom VideoCore VII
-     \\033[1;31m\`\$\$b.\\033[0m                    \\033[1;31mMemory\\033[0m: 1420MiB / 8096MiB
+  \\033[1;31m\`Y\$\$\\033[0m                        \\033[1;31mCPU\\033[0m: $(lscpu | grep 'Model name' | cut -f 2 -d ":" | awk '{$1=$1}1')
+   \\033[1;31m\`Y\$\$.\\033[0m                      \\033[1;31mMemory\\033[0m: $(free -m | awk '/Mem:/ { print $3"MiB / "$2"MiB" }')
+     \\033[1;31m\`\$\$b.\\033[0m
        \\033[1;31m\`Y\$\$b.\\033[0m
           \\033[1;31m\`\"Y\$b._\\033[0m
               \\033[1;31m\`\"\"\"\\033[0m
 "
 }
 
-# Mock apt for Trixie
-apt() {
-  case "$1" in
-    update)
-      echo "Hit:1 http://deb.debian.org/debian trixie InRelease"
-      echo "Hit:2 http://deb.debian.org/debian trixie-updates InRelease"
-      echo "Hit:3 http://security.debian.org/debian-security trixie-security InRelease"
-      echo "Hit:4 http://archive.raspberrypi.com/debian trixie InRelease"
-      echo "Reading package lists... Done"
-      ;;
-    upgrade)
-      echo "Reading package lists... Done"
-      echo "Building dependency tree... Done"
-      echo "Reading state information... Done"
-      echo "Calculating upgrade... Done"
-      echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
-      ;;
-    install)
-      if [ -z "$2" ]; then
-        echo "E: Command line option 'install' [from $2] is not understood"
-      else
-        echo "Reading package lists... Done"
-        echo "Building dependency tree... Done"
-        echo "Reading state information... Done"
-        echo "$2 is already the newest version (1.2.3-1)."
-        echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
-      fi
-      ;;
-    *)
-      command apt "$@"
-      ;;
-  esac
-}
-alias apt-get='apt'
-
-# Mock cat for system files
-cat() {
-  if [ "$1" = "/etc/os-release" ]; then
-    echo 'PRETTY_NAME="Debian GNU/Linux 13 (trixie)"'
-    echo 'NAME="Debian GNU/Linux"'
-    echo 'VERSION_ID="13"'
-    echo 'VERSION="13 (trixie)"'
-    echo 'ID=debian'
-    echo 'ID_LIKE=debian'
-    echo 'HOME_URL="https://www.debian.org/"'
-    echo 'SUPPORT_URL="https://www.debian.org/support"'
-    echo 'BUG_REPORT_URL="https://bugs.debian.org/"'
-  elif [ "$1" = "/etc/debian_version" ]; then
-    echo "13.0"
-  elif [ "$1" = "/etc/hostname" ]; then
-    echo "raspberrypi"
-  else
-    command cat "$@"
-  fi
-}
-
-# Mock whoami
-whoami() {
-  echo "pi"
-}
-
-# Mock sudo
+# Mock sudo to just run the command (since we are likely root in container)
 sudo() {
-  if [ "$1" = "apt" ] || [ "$1" = "apt-get" ]; then
-    apt "\${@:2}"
-  else
-    "\$@"
-  fi
+  "\$@"
 }
 
 # Mock reboot
 reboot() {
-  echo -e "\\033[1;31mBroadcast message from root@raspberrypi (pts/0) ($(date '+%a %b %d %H:%M:%S %Y')):\\033[0m"
+  echo -e "\\033[1;31mBroadcast message from root@$(hostname) (pts/0) ($(date '+%a %b %d %H:%M:%S %Y')):\\033[0m"
   echo ""
   echo "The system is going down for reboot NOW!"
 }
@@ -291,15 +220,13 @@ minima() {
 
 # Initial Welcome
 show_welcome "$mode"
-`
-              pty.stdin.write(mocks.replace(/\n/g, '\r\n'));
+\`
+              pty.stdin.write(mocks.replace(/\\n/g, '\\r\\n'));
 
-              if (mode === 'raspbian' || mode === 'debian') {
-                pty.stdin.write("export PS1='\\[\\e[32m\\]pi@raspberrypi\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
-              } else if (mode === 'ubuntu') {
-                pty.stdin.write("export PS1='\\[\\e[32m\\]user@ubuntu\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
-              } else {
+              if (mode === 'pinet') {
                 pty.stdin.write("export PS1='\\[\\e[35m\\]pinet@beta-node\\[\\e[0m\\]:\\[\\e[36m\\]\\w\\[\\e[0m\\]\\$ '\n");
+              } else {
+                pty.stdin.write("export PS1='\\[\\e[32m\\]\\u@\\h\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[0m\\]\\$ '\n");
               }
             }, 500);
           }
@@ -558,6 +485,7 @@ show_welcome "$mode"
 
   // Simulate block production on server
   setInterval(() => {
+    console.log("Simulating block production...");
     pinetState.minima.blockHeight++;
     saveState();
   }, 10000);
