@@ -93,7 +93,9 @@ For a fully automated setup of the entire PiNetOS Enterprise stack (including k3
 ```bash
 git clone https://github.com/WilliamMajanja/Minima-PiNet-Os.git
 cd Minima-PiNet-Os/scripts
-sudo ./install-pinet.sh
+#make executable if running on linux
+#[optional] chmod +x ./install-pinet-desktop.sh
+sudo ./install-pinet-desktop.sh
 ```
 This script will build the OS, configure the node, enable all systemd services, and start the blockchain node.
 
